@@ -3,7 +3,7 @@ name: Types
 on: [push, pull_request]
 
 jobs:
-  test:
+  type-check:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
