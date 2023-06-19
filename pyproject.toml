@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "py_tracer"
+name = "pytraced"
 description = "A simple, lightweight, & extensible logging library for python"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -48,4 +48,4 @@ IssueTracker = "https://github.com/ErisFletcher/py_tracer/issues"
 where = ["src"]
 
 [tool.setuptools.package-data]
-py_tracer = ["py.typed"]
+pytraced = ["py.typed"]
