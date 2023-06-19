@@ -1,7 +1,7 @@
 from re import fullmatch
 
-import py_tracer
+import pytraced
 
 
 def test_version() -> None:
-    assert fullmatch(r"\d+\.\d+\.\d+", py_tracer.__version__)
+    assert fullmatch(r"\d+\.\d+\.\d+", pytraced.__version__)
