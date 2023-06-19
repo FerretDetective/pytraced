@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "py_tracer"
-description = "A lightweight & extensible logging library for python"
+description = "A simple, lightweight, & extensible logging library for python"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
