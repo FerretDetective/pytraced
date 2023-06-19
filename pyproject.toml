@@ -18,8 +18,8 @@ dependencies = []
 dynamic = ["version"]
 
 [[project.authors]]
-name = "Eris Fletcher"
-email = "fletcher.eris@gmail.com"
+name = "Eris"
+email = "theferretdetective@gmail.com"
 
 [projecct.readme]
 file = "README.md"
@@ -41,8 +41,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ErisFletcher/pytraced"
-IssueTracker = "https://github.com/ErisFletcher/pytraced/issues"
+Homepage = "https://github.com/FerretDetective/pytraced"
+IssueTracker = "https://github.com/FerretDetective/pytraced/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
