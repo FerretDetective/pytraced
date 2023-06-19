@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py_tracer"
+description = "A lightweight & extensible logging library for python"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.10, <4"
+dependencies = []
+dynamic = ["version"]
+
+[[project.authors]]
+name = "Eris Fletcher"
+email = "fletcher.eris@gmail.com"
+
+[projecct.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.license]
+file = "LICENSE.md"
+content-type = "text/markdown"
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.3.0",
+    "pylint>=2.17.4",
+    "black>=0.4.6",
+    "tox>=4.0.16",
+    "pytest>=7.3.2",
+    "isort>=5.12.0",
+    "pytest_cov>=4.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ErisFletcher/py_tracer"
+IssueTracker = "https://github.com/ErisFletcher/py_tracer/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+py_tracer = ["py.typed"]
