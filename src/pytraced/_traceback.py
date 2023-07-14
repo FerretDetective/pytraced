@@ -12,7 +12,6 @@ from traceback import StackSummary, walk_stack
 from types import FrameType
 
 # pylint: disable=broad-exception-caught, broad-exception-raised, protected-access, ungrouped-imports
-# pyright: reportPrivateUsage=false
 
 try:
     from sys import _getframe
