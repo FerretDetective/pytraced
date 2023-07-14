@@ -412,14 +412,16 @@ class Logger:
                            timezone name. The format specifiers should be placed as follows:
                            `%{time:<...formats>}%`; Exg: `%{time:yy-mm-dd, %X}%`.
             - `%{trace}%` - Traceback from where the logger was called. To specify a specific trace
-                            style you can use one of the defaults provided. `simple`: very simple
-                            stack trace including only the filename and lineno (main.py:5), `clean`:
-                            simple yet informative trace including relative path to the file, the
-                            enclosing function, & the lineno (src/main.py@main:5), `detailed`:
-                            detailed stack trace including the info provided by the `clean` info
-                            for entire traceback (src/main.py@<module>:9 -> src/main.py@main:5),
-                            `full`: the full unprocessed python traceback. Must follow the format
-                            `%{trace:<format>}%`; Exg: `%{trace:clean}%`.
+                            style you can use one of the defaults provided. `bare`: barebones
+                            stack trace including only the filename and lineno (main.py:5),
+                            `simple`: simple trace including the global `__name__`, the enclosing
+                            fucntion, & the lineno (__main__@main:5), `clean`: simple yet
+                            informative trace including relative path to the file, the enclosing
+                            function, & the lineno (src/main.py@main:5), `detailed`: detailed stack
+                            trace including the info provided by the `clean` info for entire
+                            traceback (src/main.py@<module>:9 -> src/main.py@main:5), `full`: the
+                            full unprocessed python traceback. Must follow the format
+                            '%{trace:<format>}%'; Exg: '%{trace:clean}%'.
             - `%{gname}%` or `%{global-name}%` - Global `__name__` from where the log was produced.
             - `%{pname}%` or `%{process-name}%` - Name of the process where the log originated.
             - `%{pid}%` or `%{process-id}%` - Id of the process where the log originated.
