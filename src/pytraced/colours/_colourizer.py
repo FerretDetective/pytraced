@@ -10,9 +10,8 @@ Functions:
     - `wrap` - Wrap a stream with a AnsiToWin32 wrapper.
 """
 
+import os
 import sys
-from os import environ
-from sys import __stderr__, __stdout__, platform
 from typing import TextIO, TypeGuard
 
 from colorama.ansitowin32 import AnsiToWin32, StreamWrapper
@@ -34,7 +33,7 @@ def _get_colours(*colours: Colour) -> str:
     return "".join(f"\033[{style.value}m" for style in colours)
 
 
-def add_colours(string: str, *colours: Colour, end: Colour = Meta.RESET) -> str:
+def add_colours(string: str, *colours: Colour, end: Colour | None = Meta.RESET) -> str:
     """
     Add colours % styles to strings and return the formatted string.
 
@@ -46,6 +45,8 @@ def add_colours(string: str, *colours: Colour, end: Colour = Meta.RESET) -> str:
 
     Returns: `str` - String with the colours & styles added.
     """
+    if end is None:
+        return _get_colours(*colours) + string
     return _get_colours(*colours) + string + _get_colours(end)
 
 
@@ -58,8 +59,9 @@ def should_colourize(stream: object) -> bool:
 
     Returns: `bool` Whether or not the object should receive colourized strings.
     """
-    if stream in (__stdout__, __stderr__) and (
-        "PYCHARM_HOSTED" in environ or (platform == "win32" and "TERM" in environ)
+    if stream in (sys.__stdout__, sys.__stderr__) and (
+        "PYCHARM_HOSTED" in os.environ
+        or (sys.platform == "win32" and "TERM" in os.environ)
     ):
         return True
 
@@ -85,7 +87,7 @@ def should_wrap(stream: object) -> TypeGuard[TextIO]:
     # In order to do so `sys.platform` was used because `platform.platform()` does not indicate
     # correctly to type checkers to ignore blocks conditionally based on the underlying operating
     # system
-    if sys.platform == "win32" and stream in (__stdout__, __stderr__):
+    if sys.platform == "win32" and stream in (sys.__stdout__, sys.__stderr__):
         return winapi_test()
 
     return False
