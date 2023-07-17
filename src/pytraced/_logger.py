@@ -396,7 +396,8 @@ class Logger:
         encoding: str = "utf-8",
     ) -> int:
         """
-        Add a new `Sink` to the logger with a custom configuration.
+        Add a new `Sink` to the logger with a custom configuration. If given a subclass of `Sink`
+        skip all configuration and add the existing sink.
 
         Format Secifiers for format strings:
             All format specifiers are wrapped in percent sign followed by braces; Exg: `%{lvl}%`.
