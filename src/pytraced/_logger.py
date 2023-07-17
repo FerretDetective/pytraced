@@ -86,7 +86,7 @@ class Logger:
     def __str__(self) -> str:
         return (
             f"{type(self).__name__}{{ name: '{self.name}', levels: {self._levels}, "
-            f"sinks: {self._sinks}, disable_for: {self._disabled_for} }}"
+            f"sinks: {self._sinks}, disabled_for: {self._disabled_for} }}"
         )
 
     def _sink_id_generator(self) -> Iterator[int]:
