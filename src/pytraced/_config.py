@@ -179,7 +179,11 @@ class Config:
                     )
 
                 format_string += FormatLiteral.DATE_TIME.value
-            elif cur_fmt.startswith("%{trace:") and cur_fmt[-2:] == "}%":
+            elif (
+                cur_fmt == "%{trace}%"
+                or cur_fmt.startswith("%{trace:")
+                and cur_fmt[-2:] == "}%"
+            ):
                 specifiers = cur_fmt[2:-2].split(":")  # remove '%{' & '}%' then split
 
                 if len(specifiers) == 1:
