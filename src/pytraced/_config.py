@@ -184,21 +184,16 @@ class Config:
                 or cur_fmt.startswith("%{trace:")
                 and cur_fmt[-2:] == "}%"
             ):
-                specifiers = cur_fmt[2:-2].split(":")  # remove '%{' & '}%' then split
-
-                if len(specifiers) == 1:
-                    self.trace_style = TraceStyle.CLEAN
-                elif len(specifiers) == 2:
+                if ":" in cur_fmt:
+                    style = cur_fmt[cur_fmt.index(":") + 1 : -2]  # ignore ':' & '}%'
                     try:
-                        self.trace_style = TraceStyle[specifiers[1].upper()]
+                        self.trace_style = TraceStyle[style.upper()]
                     except KeyError:
                         raise InvalidFormatSpecifierError(  # pylint: disable=raise-missing-from
-                            f"the format specifier: {specifiers[1]!r} is invalid"
+                            f"the format specifier: {style!r} is invalid"
                         )
                 else:
-                    raise InvalidFormatSpecifierError(
-                        f"the provided specifiers: {specifiers!r} are invalid"
-                    )
+                    self.trace_style = TraceStyle.CLEAN
 
                 format_string += FormatLiteral.TRACE.value
             elif cur_fmt in ("%{gname}%", "%{global-name}%"):
