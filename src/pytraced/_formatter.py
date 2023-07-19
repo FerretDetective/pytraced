@@ -18,19 +18,6 @@ from ._record import Record
 from .colours import add_colours
 
 
-def _round_microseconds(microseconds: int, ndigits: int) -> str:
-    """
-    Return microseconds from strftime as a zero-padded integer with ndigits.
-
-    Parameters:
-        - `microseconds: int` - Microseconds to round (0-999,999).
-        - `ndigits: int = 3` Number to digits to round the microseconds to.
-
-    Returns: `str` - Rounded and zero padded microseconds.
-    """
-    return f"{int(round(microseconds * (10**-6), ndigits) * (10**ndigits)):0>3}"
-
-
 @lru_cache(maxsize=12)
 def _format_date_time(date_time: datetime, fmt: str) -> str:
     """
@@ -43,9 +30,7 @@ def _format_date_time(date_time: datetime, fmt: str) -> str:
 
     Returns: `str` - Formatted datetime.
     """
-    return date_time.strftime(
-        fmt.replace("%f", _round_microseconds(date_time.microsecond, 3))
-    )
+    return date_time.strftime(fmt.replace("%f", f"{date_time.microsecond:0>6}"[:-3]))
 
 
 @lru_cache(maxsize=None)  # unbounded cache for the lifetime of the program
