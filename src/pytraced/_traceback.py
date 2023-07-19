@@ -25,7 +25,7 @@ try:
 
         Returns: `FrameType` - Currently executing frame at the specified depth.
         """
-        return _getframe(depth)
+        return _getframe(depth + 1)  # offset current frame
 
 except ImportError:
 
