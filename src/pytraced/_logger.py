@@ -127,7 +127,7 @@ class Logger:
         level: str | Level,
         message: object,
         exception: BaseException | None = None,
-        stack_level: int = 3,
+        stack_level: int = 2,
     ) -> None:
         """
         Record a `Record` and propogate it to all of the `Logger`'s `Sink`s.
@@ -369,7 +369,7 @@ class Logger:
         try:
             yield
         except exception_type as exception:  # pylint: disable=broad-exception-caught
-            self._log(level, message, exception, stack_level=4)
+            self._log(level, message, exception, stack_level=3)
 
             if on_error is not None:
                 on_error(exception)
@@ -545,7 +545,7 @@ class Logger:
                                           this method was called will be enable.
         """
         try:
-            self._disabled_for.remove(name or get_frame(2).f_globals["__name__"])
+            self._disabled_for.remove(name or get_frame(1).f_globals["__name__"])
         except KeyError:
             pass
 
@@ -557,4 +557,4 @@ class Logger:
             - `name: str | None = None` - Name of the module to disable. If not the module where
                                           this method was called will be disabled.
         """
-        self._disabled_for.add(name or get_frame(2).f_globals["__name__"])
+        self._disabled_for.add(name or get_frame(1).f_globals["__name__"])
