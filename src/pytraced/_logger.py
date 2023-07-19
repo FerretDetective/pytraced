@@ -83,12 +83,6 @@ class Logger:
     def __repr__(self) -> str:
         return f"{type(self).__name__}(name={self.name!r})"
 
-    def __str__(self) -> str:
-        return (
-            f"{type(self).__name__}{{ name: '{self.name}', levels: {self._levels}, "
-            f"sinks: {self._sinks}, disabled_for: {self._disabled_for} }}"
-        )
-
     def _sink_id_generator(self) -> Iterator[int]:
         """
         This is function returns an iterator which should be used to generate ids for all sinks.
