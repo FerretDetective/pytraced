@@ -50,7 +50,9 @@ def _format_path(str_path: str) -> str:
         return str_path
 
 
-def _format(format_str: str, record: Record, config: Config) -> str:
+def _format(
+    format_str: str, record: Record, config: Config, _from_msg: bool = False
+) -> str:
     """
     Format a the format string with the information from the record according the to config.
 
@@ -116,7 +118,10 @@ def _format(format_str: str, record: Record, config: Config) -> str:
             case FormatLiteral.THREAD_ID.value:
                 logging_string += str(record.thread.ident)
             case FormatLiteral.MESSAGE.value:
-                logging_string += _format(record.message, record, config)
+                if _from_msg:
+                    logging_string += record.message
+                else:
+                    logging_string += _format(record.message, record, config, True)
 
     return logging_string + format_str[last_end:]
 
