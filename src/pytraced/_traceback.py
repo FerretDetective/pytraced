@@ -100,8 +100,8 @@ def _get_frame_fallback(depth: int = 0) -> FrameType:
     except Exception:
         frame = sys.exc_info()[2].tb_frame  # type: ignore
         for _ in range(depth + 1):
-            frame = frame.f_back  # type: ignore
-        return frame  # type: ignore
+            frame = frame.f_back
+        return frame
 
 
 get_frame = _get_frame if hasattr(sys, "_getframe") else _get_frame_fallback
