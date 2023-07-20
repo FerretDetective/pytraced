@@ -13,7 +13,6 @@ Classes:
                                       which does not exist.
     - `Config` - Class used for storing a logging configuration.
 """
-from datetime import datetime
 from enum import Enum, auto
 from re import compile as compile_re
 from typing import Callable
@@ -169,14 +168,6 @@ class Config:
                     )
                 else:
                     self.date_fmt = "%Y-%m-%d %H:%M:%S.%f %z"
-
-                # validate date format now to avoid errors when logging
-                try:
-                    datetime.now().astimezone().strftime(self.date_fmt)
-                except ValueError:
-                    raise InvalidFormatSpecifierError(  # pylint: disable=raise-missing-from
-                        f"datetime format string: {self.date_fmt!r} is invalid"
-                    )
 
                 format_string += FormatLiteral.DATE_TIME.value
             elif (

@@ -62,10 +62,6 @@ def test_config_creation() -> None:
     config = Config("%{time}%", None, False, 0)
     assert config.date_fmt == "%Y-%m-%d %H:%M:%S.%f %z"
 
-    # test exception raised for invalid strftime date fmt
-    with raises(InvalidFormatSpecifierError):
-        Config("%{time:%Q}%", None, False, 0)
-
     # test default trace style
     config = Config("%{trace}%", None, False, 0)
     assert config.trace_style is TraceStyle.CLEAN
