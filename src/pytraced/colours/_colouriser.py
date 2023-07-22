@@ -1,5 +1,5 @@
 """
-_colourizer.py
+_colouriser.py
 
 This file contains the functions required to prepare strings with colours for the terminal.
 

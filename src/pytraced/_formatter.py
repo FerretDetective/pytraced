@@ -21,7 +21,7 @@ from .colours import add_colours
 @lru_cache(maxsize=12)
 def _format_date_time(date_time: datetime, fmt: str) -> str:
     """
-    Format a given `datetime` object using strftime but replacing any occurence of '%f'
+    Format a given `datetime` object using strftime but replacing any occurrence of '%f'
     with the microseconds to 3 digits.
 
     Parameters:
@@ -58,7 +58,7 @@ def _format(
 
     Parameters:
         - `format_str: str` - Format string which dictates where the info from the record should go.
-        - `record: Record` - Receord which contains all of the information to include in the log.
+        - `record: Record` - Record which contains all of the information to include in the log.
         - `config: Config` - Config which controls whether or not to add certain info to the log.
 
     Returns: `str` - String containing the info from the record according the to config.
@@ -146,7 +146,7 @@ def format_record(record: Record, config: Config) -> str:
     else:
         logging_string += "\n"
 
-    if config.colourize and record.level.colours is not None:
+    if config.colourise and record.level.colours is not None:
         return add_colours(logging_string, *record.level.colours)
 
     return logging_string

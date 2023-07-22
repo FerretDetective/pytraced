@@ -12,10 +12,10 @@ Functions:
 Enums:
     - `Colour` - Base class from which all colour enums inherit.
     - `Meta` - Meta styles like `BOLD` or `RESET`.
-    - `FgColour` - Foregroud text colours.
+    - `FgColour` - Foreground text colours.
     - `BgColour` - Background text colours.
 """
-from ._colourizer import add_colours, should_colourize, should_wrap, wrap
+from ._colouriser import add_colours, should_colourize, should_wrap, wrap
 from ._colours import BgColour, Colour, FgColour, Meta
 
 __version__ = "1.0.0"

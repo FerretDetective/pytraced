@@ -108,7 +108,7 @@ class Logger:
         Parameters:
             - `name: str` - `__name__` of the module to check.
 
-        Returns: `bool` - Whether or not the module is diabled.
+        Returns: `bool` - Whether or not the module is disabled.
         """
         mod_name, *parts = name.split(".")
 
@@ -130,7 +130,7 @@ class Logger:
         stack_level: int = 2,
     ) -> None:
         """
-        Record a `Record` and propogate it to all of the `Logger`'s `Sink`s.
+        Record a `Record` and propagate it to all of the `Logger`'s `Sink`s.
 
         Parameters:
             - `level: str | Level` - Severity of the log.
@@ -393,7 +393,7 @@ class Logger:
         Add a new `Sink` to the logger with a custom configuration. If given a subclass of `Sink`
         skip all configuration and add the existing sink.
 
-        Format Secifiers for format strings:
+        Format specifiers for format strings:
             All format specifiers are wrapped in percent sign followed by braces; Exg: `%{lvl}%`.
 
             - `%{name}%` - Name of the logger from which the log was produced.
@@ -407,10 +407,10 @@ class Logger:
                            timezone name. The format specifiers should be placed as follows:
                            `%{time:<...formats>}%`; Exg: `%{time:yy-mm-dd, %X}%`.
             - `%{trace}%` - Traceback from where the logger was called. To specify a specific trace
-                            style you can use one of the defaults provided. `bare`: barebones
+                            style you can use one of the defaults provided. `bare`: bare-bones
                             stack trace including only the filename and lineno (main.py:5),
                             `simple`: simple trace including the global `__name__`, the enclosing
-                            fucntion, & the lineno (__main__@main:5), `clean`: simple yet
+                            function, & the lineno (__main__@main:5), `clean`: simple yet
                             informative trace including relative path to the file, the enclosing
                             function, & the lineno (src/main.py@main:5), `detailed`: detailed stack
                             trace including the info provided by the `clean` info for entire
@@ -427,18 +427,18 @@ class Logger:
             - `out: SupportsWrite[str] | Callable[[str], None] | StrPath` - Output source for logs.
             - `min_level: str | int | Level = 0` - Minimum severity log that will be written.
             - `log_format: Callable[[Record], str]
-                           | str | Config = Config.DEFAULT` - Should either be a parseable format
+                           | str | Config = Config.DEFAULT` - Should either be a parsable format
                                                               string or a function which returns a
                                                               formatted `Record`.
             - `log_filter: Callable[[Record], bool]
                            | None = None` - Function used to determine whether or not a log should
-                                            be written to the stream. Returning false inidcates that
+                                            be written to the stream. Returning false indicates that
                                             a log shouldn't be written.
             - `colourize: bool = True` - Whether or not to colourize logs (if possible).
             - `on_remove: Callable[[], None]
                           | None = None` - Callback which will be called either when the sink is
-                                           removed or when python intrepreter exits.
-            - `open_mode: OpenTextMode = "a"` - Mode uesed to open a file (if applicable).
+                                           removed or when python interpreter exits.
+            - `open_mode: OpenTextMode = "a"` - Mode used to open a file (if applicable).
             - `encoding: str = "utf-8"` - File encoding used (if applicable).
 
         Returns: `int` - Id of the `Sink` object.

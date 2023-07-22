@@ -1,7 +1,7 @@
 """
 _config.py:
 
-This file contains all of the classes used for interacting with and contructing `Config` objects.
+This file contains all of the classes used for interacting with and constructing `Config` objects.
 
 Enums:
     - `TraceStyle` - Enum used to keep track of stack styles for the `Config` object.
@@ -9,7 +9,7 @@ Enums:
                         runtime.
 
 Classes:
-    - `InvalidFormatSpecifierError` - Error raised when the parser encouters a format specifier
+    - `InvalidFormatSpecifierError` - Error raised when the parser encounters a format specifier
                                       which does not exist.
     - `Config` - Class used for storing a logging configuration.
 """
@@ -25,8 +25,8 @@ class TraceStyle(Enum):
     This enum is used to keep track of which style of stack trace the used specified in the config.
 
     Options:
-        - `BARE` - Barebones stack trace including only the filename and lineno. (main.py:5)
-        - `SIMPLE` - Simple stack trace including the global `__name__`, the enclosing fucntion,
+        - `BARE` - Bare-bones stack trace including only the filename and lineno. (main.py:5)
+        - `SIMPLE` - Simple stack trace including the global `__name__`, the enclosing function,
                      and the lineno. (__main__@main:5)
         - `CLEAN` - Simple yet informative trace including relative path to the file, the enclosing
                     function, & the lineno. (src/main.py@main:5)
@@ -80,7 +80,7 @@ class FormatLiteral(Enum):
 class InvalidFormatSpecifierError(Exception):
     """
     This class should be used to raise an error when the parser
-    encouters a format specifier which does not exist.
+    encounters a format specifier which does not exist.
     """
 
 
@@ -97,7 +97,7 @@ class Config:
         - `min_level: int` - Minimum severity level which will be logged.
         - `filter_func: Callable[[Record], bool]
                         | None = None` - Function used to determine whether or not a log should
-                                         be written to the stream. Returning false inidcates that
+                                         be written to the stream. Returning false indicates that
                                          a log shouldn't be written.
         - `date_fmt: str | None = None` - Datetime format string which will be passed to strftime.
         - `trace_style: StackTraceStyle | None = NOne` - Style to stack trace to use for formatting.
@@ -111,7 +111,7 @@ class Config:
         "formatter",
         "date_fmt",
         "trace_style",
-        "colourize",
+        "colourise",
         "min_level",
         "filter_func",
     )
@@ -128,7 +128,7 @@ class Config:
         colourize: bool,
         min_level: int,
     ) -> None:
-        self.colourize = colourize
+        self.colourise = colourize
         self.min_level = min_level
         self.filter_func = filter_func
         self.date_fmt: str | None = None
@@ -207,7 +207,7 @@ class Config:
 
     def __repr__(self) -> str:
         return (
-            f"{type(self).__name__}(colourize={self.colourize}, min_level={self.min_level}, "
+            f"{type(self).__name__}(colourize={self.colourise}, min_level={self.min_level}, "
             f"log_format={self.formatter}, filter_func={self.filter_func})"
         )
 
@@ -215,6 +215,6 @@ class Config:
         return (
             f"{type(self).__name__}{{ formatter: {self.formatter!r}, "
             f"date_fmt: {self.date_fmt!r}, trace_style: {self.trace_style!r}, "
-            f"colourize: {self.colourize}, min_level: {self.min_level}, "
+            f"colourize: {self.colourise}, min_level: {self.min_level}, "
             f"filter_func: {self.filter_func!r}}}"
         )

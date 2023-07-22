@@ -1,11 +1,12 @@
 """
 _levels.py:
 
-This file contains all of the classes & functions used for contructing 
+This file contains all of the classes & functions used for constructing 
 and interacting with Level objects.
 
 Classes:
-    - `LevelDoesNotExistError` - Error raised when attemping to access a Level which does not exist.
+    - `LevelDoesNotExistError` - Error raised when attempting to access a Level
+                                 which does not exist.
     - `Level` - Class used for creating logging levels.
 
 Functions:

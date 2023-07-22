@@ -6,7 +6,7 @@ This file contains all the enums needed for printing colours.
 Enums:
     - `Colour` - Base class from which all colour enums inherit.
     - `Meta` - Meta styles like `BOLD` or `RESET`.
-    - `FgColour` - Foregroud text colours.
+    - `FgColour` - Foreground text colours.
     - `BgColour` - Background text colours.
 """
 from enum import Enum

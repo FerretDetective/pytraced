@@ -34,7 +34,7 @@ def test_config_creation() -> None:
     config = Config(*opts)
     assert config.formatter == opts[0]
     assert config.filter_func == opts[1]
-    assert config.colourize == opts[2]
+    assert config.colourise == opts[2]
     assert config.min_level == opts[3]
     assert config.date_fmt is None
     assert config.trace_style is None

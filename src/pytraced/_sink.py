@@ -1,10 +1,10 @@
 """
 _sink.py:
 
-This file contains all of the classes used for contructing and interacting with `Sink` objects.
+This file contains all of the classes used for constructing and interacting with `Sink` objects.
 
 Classes:
-    - `SinkDoesNotExistError` - Error raised when attemping to access a sink which does not exist.
+    - `SinkDoesNotExistError` - Error raised when attempting to access a sink which does not exist.
     - `Sink` - Abstract base class from which all sinks must inherit.
     - `SyncSink` - Class used for blocking/synchronous logging.
 """

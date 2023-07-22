@@ -1,7 +1,7 @@
 """
 _record.py:
 
-This file contains all of the classes used for contructing `Record` objects.
+This file contains all of the classes used for constructing `Record` objects.
 
 Classes:
     - `Record` - Class used for storing runtime information collected by the logger.
