@@ -288,7 +288,7 @@ def test_add() -> None:
     cfg_opts = {
         "log_format": "%{msg}%",
         "log_filter": lambda _: True,
-        "colourize": False,
+        "colourise": False,
         "min_level": 5,
     }
     logger.add(lambda _: None, **cfg_opts)  # type: ignore
@@ -297,7 +297,7 @@ def test_add() -> None:
     assert sinks[-2].config is cfg
     assert (
         sinks[-1].config.formatter == cfg_opts["log_format"]
-        and sinks[-1].config.colourise == cfg_opts["colourize"]
+        and sinks[-1].config.colourise == cfg_opts["colourise"]
         and sinks[-1].config.min_level == cfg_opts["min_level"]
         and sinks[-1].config.filter_func == cfg_opts["log_filter"]
     )

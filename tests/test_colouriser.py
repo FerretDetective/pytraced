@@ -7,7 +7,7 @@ from pytraced.colours import (
     FgColour,
     Meta,
     add_colours,
-    should_colourize,
+    should_colourise,
     should_wrap,
     wrap,
 )
@@ -22,13 +22,13 @@ def test_add_colours() -> None:
     assert add_colours(string, colour, end=None) == expected
 
 
-def test_should_colourize() -> None:
+def test_should_colourise() -> None:
     class Dummy:
         def isatty(self) -> bool:
             return True
 
-    assert should_colourize(Dummy())
-    assert not should_colourize(object())
+    assert should_colourise(Dummy())
+    assert not should_colourise(object())
 
     tmp_environ = os.environ
     tmp_platform = sys.platform
@@ -36,7 +36,7 @@ def test_should_colourize() -> None:
     os.environ["TERM"] = "TESTING"
     sys.platform = "win32"
 
-    assert should_colourize(sys.__stderr__)
+    assert should_colourise(sys.__stderr__)
 
     os.environ = tmp_environ
     sys.platform = tmp_platform

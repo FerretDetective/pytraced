@@ -31,7 +31,7 @@ from ._levels import Level, LevelDoesNotExistError, get_defaults
 from ._record import Record
 from ._sink import Sink, SinkDoesNotExistError, SyncSink
 from ._traceback import extract_stack, get_frame
-from .colours import Colour, should_colourize, should_wrap, wrap
+from .colours import Colour, should_colourise, should_wrap, wrap
 
 if TYPE_CHECKING:
     from _typeshed import OpenTextMode, StrPath, SupportsWrite
@@ -384,7 +384,7 @@ class Logger:
         min_level: str | int | Level = 0,
         log_format: str | Callable[[Record], str] | Config = Config.DEFAULT,
         log_filter: Callable[[Record], bool] | None = None,
-        colourize: bool = True,
+        colourise: bool = True,
         on_remove: Callable[[], None] | None = None,
         open_mode: OpenTextMode = "a",
         encoding: str = "utf-8",
@@ -434,7 +434,7 @@ class Logger:
                            | None = None` - Function used to determine whether or not a log should
                                             be written to the stream. Returning false indicates that
                                             a log shouldn't be written.
-            - `colourize: bool = True` - Whether or not to colourize logs (if possible).
+            - `colourise: bool = True` - Whether or not to colourise logs (if possible).
             - `on_remove: Callable[[], None]
                           | None = None` - Callback which will be called either when the sink is
                                            removed or when python interpreter exits.
@@ -471,7 +471,7 @@ class Logger:
             config = Config(
                 log_format=log_format,
                 filter_func=log_filter,
-                colourize=should_colourize(out) and colourize,
+                colourise=should_colourise(out) and colourise,
                 min_level=min_level,
             )
 

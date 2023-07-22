@@ -88,5 +88,5 @@ def test_config_str() -> None:
     assert f"formatter: {opts[0]}" in config_str
     assert f"date_fmt: {None}" in config_str
     assert f"filter_func: {None}" in config_str
-    assert f"colourize: {opts[2]}" in config_str
+    assert f"colourise: {opts[2]}" in config_str
     assert f"min_level: {opts[3]}" in config_str

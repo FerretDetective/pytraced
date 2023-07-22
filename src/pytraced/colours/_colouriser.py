@@ -5,7 +5,7 @@ This file contains the functions required to prepare strings with colours for th
 
 Functions:
     - `add_colours` - Add colours a to strings and return the formatted string.
-    - `should_colourize` - Check to see if an object should receive colourized strings.
+    - `should_colourise` - Check to see if an object should receive colourised strings.
     - `should_wrap` - Check to see if an object should be wrapped in a AnsiToWin32 converter.
     - `wrap` - Wrap a stream with a AnsiToWin32 wrapper.
 """
@@ -50,14 +50,14 @@ def add_colours(string: str, *colours: Colour, end: Colour | None = Meta.RESET) 
     return _get_colours(*colours) + string + _get_colours(end)
 
 
-def should_colourize(stream: object) -> bool:
+def should_colourise(stream: object) -> bool:
     """
-    Check to see if an object should receive colourized strings.
+    Check to see if an object should receive colourised strings.
 
     Parameters:
         - `stream: object` - Object to check.
 
-    Returns: `bool` Whether or not the object should receive colourized strings.
+    Returns: `bool` Whether or not the object should receive colourised strings.
     """
     if stream in (sys.__stdout__, sys.__stderr__) and (
         "PYCHARM_HOSTED" in os.environ

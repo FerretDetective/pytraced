@@ -93,7 +93,7 @@ class Config:
         - `DEFAULT: str` - Default format string for logging.
 
     Attributes:
-        - `colourize: bool` - Whether or not the colourize the output stream.
+        - `colourise: bool` - Whether or not the colourise the output stream.
         - `min_level: int` - Minimum severity level which will be logged.
         - `filter_func: Callable[[Record], bool]
                         | None = None` - Function used to determine whether or not a log should
@@ -125,10 +125,10 @@ class Config:
         self,
         log_format: Callable[[Record], str] | str,
         filter_func: Callable[[Record], bool] | None,
-        colourize: bool,
+        colourise: bool,
         min_level: int,
     ) -> None:
-        self.colourise = colourize
+        self.colourise = colourise
         self.min_level = min_level
         self.filter_func = filter_func
         self.date_fmt: str | None = None
@@ -207,7 +207,7 @@ class Config:
 
     def __repr__(self) -> str:
         return (
-            f"{type(self).__name__}(colourize={self.colourise}, min_level={self.min_level}, "
+            f"{type(self).__name__}(colourise={self.colourise}, min_level={self.min_level}, "
             f"log_format={self.formatter}, filter_func={self.filter_func})"
         )
 
@@ -215,6 +215,6 @@ class Config:
         return (
             f"{type(self).__name__}{{ formatter: {self.formatter!r}, "
             f"date_fmt: {self.date_fmt!r}, trace_style: {self.trace_style!r}, "
-            f"colourize: {self.colourise}, min_level: {self.min_level}, "
+            f"colourise: {self.colourise}, min_level: {self.min_level}, "
             f"filter_func: {self.filter_func!r}}}"
         )
