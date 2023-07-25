@@ -1,7 +1,7 @@
 """
 pytraced:
 
-version: 0.1.0
+version: 0.1.1
 
 A simple, lightweight, & extensible logging library for python. This library provides an out of the
 box logger which prints to `stderr`, however it is extremely customizable to fit a wide range of 
@@ -64,7 +64,7 @@ from ._logger import Logger
 from ._record import Record
 from ._sink import Sink, SinkDoesNotExistError
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __all__ = (
     "logger",
     "Logger",
