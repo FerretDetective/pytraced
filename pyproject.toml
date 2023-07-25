@@ -13,38 +13,25 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
 ]
+readme = "README.md"
+license = { file = "LICENSE.md" }
 requires-python = ">=3.10, <4"
-dependencies = []
-dynamic = ["version"]
+dynamic = ["version", "dependencies", "optional-dependencies"]
 
 [[project.authors]]
 name = "Eris"
 email = "theferretdetective@gmail.com"
 
-[projecct.readme]
-file = "README.md"
-content-type = "text/markdown"
-
-[project.license]
-file = "LICENSE.md"
-content-type = "text/markdown"
-
-[project.optional-dependencies]
-dev = [
-    "mypy>=1.3.0",
-    "types-colorama>=0.4.15.11",
-    "pylint>=2.17.4",
-    "black>=0.4.6",
-    "tox>=4.0.16",
-    "pytest>=7.3.2",
-    "isort>=5.12.0",
-    "pytest_cov>=4.1.0",
-    "pympler>=1.0.1",
-]
-
 [project.urls]
 Homepage = "https://github.com/FerretDetective/pytraced"
 IssueTracker = "https://github.com/FerretDetective/pytraced/issues"
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+version = { attr = "pytraced.__version__" }
+
+[tool.setuptools.dynamic.optional-dependencies]
+dev = { file = ["dev_requirements.txt"] }
 
 [tool.setuptools.packages.find]
 where = ["src"]
