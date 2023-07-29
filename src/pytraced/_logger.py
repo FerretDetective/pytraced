@@ -136,7 +136,7 @@ class Logger:
             - `level: str | Level` - Severity of the log.
             - `message: object` - Message or additional information.
             - `exception: BaseException | None = None` - Optional exception to print with the log.
-            - `stack_level: int = 3` - Int which stores how many calls back the logger called from.
+            - `stack_level: int = 2` - Int which stores how many calls back the logger called from.
         """
         frame = get_frame(stack_level)
         global_name: str = frame.f_globals["__name__"]
