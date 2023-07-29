@@ -28,7 +28,7 @@ class Record:
         - `date_time: datetime` - Time & data of when the log was produced.
         - `stack_trace: StackSummary` - Stack trace of the currently executing frame where the
                                         log was produced.
-        - `message: object` - Additional information which was added to the record.
+        - `message: str` - Additional information which was added to the record.
         - `process: BaseProcess` - Currently executing process from where the log was produced.
         - `thread: Thread` - Currently executing thread from where the log was produced.
         - `exception: BaseException | None` - Optional exception to be printed.
