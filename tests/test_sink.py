@@ -1,8 +1,8 @@
 from datetime import datetime
 from io import StringIO
 from multiprocessing import current_process
+from sys import _getframe
 from threading import current_thread
-from traceback import extract_stack
 
 from pytraced import Level, Record
 from pytraced._sink import Sink, SinkDoesNotExistError, SyncSink
@@ -34,7 +34,7 @@ def test_sink_format() -> None:
                 __name__,
                 Level("LEVEL", 0),
                 datetime.now(),
-                extract_stack(),
+                _getframe(),
                 "MESSAGE",
                 current_process(),
                 current_thread(),
@@ -50,7 +50,7 @@ def test_sink_format() -> None:
                 __name__,
                 Level("LEVEL", 0),
                 datetime.now(),
-                extract_stack(),
+                _getframe(),
                 "MESSAGE",
                 current_process(),
                 current_thread(),

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from multiprocessing.process import BaseProcess
 from threading import Thread
-from traceback import StackSummary
+from types import FrameType
 
 from ._levels import Level
 
@@ -26,8 +26,7 @@ class Record:
         - `global_name: str` - Global `__name__` from where the log was produced.
         - `level: Level` - Level/severity of the log.
         - `date_time: datetime` - Time & data of when the log was produced.
-        - `stack_trace: StackSummary` - Stack trace of the currently executing frame where the
-                                        log was produced.
+        - `frame: FrameType` -  Currently executing frame where the log was produced.
         - `message: str` - Additional information which was added to the record.
         - `process: BaseProcess` - Currently executing process from where the log was produced.
         - `thread: Thread` - Currently executing thread from where the log was produced.
@@ -38,7 +37,7 @@ class Record:
     global_name: str
     level: Level
     date_time: datetime
-    stack_trace: StackSummary
+    frame: FrameType
     message: str
     process: BaseProcess
     thread: Thread

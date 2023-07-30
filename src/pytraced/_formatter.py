@@ -10,7 +10,7 @@ from datetime import datetime
 from functools import lru_cache
 from os.path import basename
 from pathlib import Path
-from traceback import format_exception, format_list
+from traceback import extract_stack, format_exception, format_list
 
 from ._config import Config, FormatLiteral, TraceStyle
 from ._record import Record
@@ -80,29 +80,29 @@ def _format(
                 match config.trace_style:
                     case TraceStyle.BARE:
                         logging_string += (
-                            f"{basename(record.stack_trace[0].filename)}:"
-                            f"{record.stack_trace[0].lineno}"
+                            f"{basename(record.frame.f_code.co_filename)}:"
+                            f"{record.frame.f_lineno}"
                         )
                     case TraceStyle.SIMPLE:
                         logging_string += (
-                            f"{record.global_name}@{record.stack_trace[0].name}"
-                            f":{record.stack_trace[0].lineno}"
+                            f"{record.global_name}@{record.frame.f_code.co_name}"
+                            f":{record.frame.f_lineno}"
                         )
                     case TraceStyle.CLEAN:
                         logging_string += (
-                            f"{_format_path(record.stack_trace[0].filename)}@"
-                            f"{record.stack_trace[0].name}:{record.stack_trace[0].lineno}"
+                            f"{_format_path(record.frame.f_code.co_filename)}@"
+                            f"{record.frame.f_code.co_name}:{record.frame.f_lineno}"
                         )
                     case TraceStyle.DETAILED:
                         logging_string += " -> ".join(
                             (
                                 f"{_format_path(trace.filename)}@{trace.name}:{trace.lineno}"
-                                for trace in reversed(record.stack_trace)
+                                for trace in extract_stack(record.frame)
                             )
                         )
                     case TraceStyle.FULL:
                         logging_string += "\n{}\n".format(
-                            "\n".join(format_list(record.stack_trace[::-1]))
+                            "\n".join(format_list(extract_stack(record.frame)))
                         )
             case FormatLiteral.GLOBAL_NAME.value:
                 logging_string += record.global_name

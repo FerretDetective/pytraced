@@ -30,7 +30,7 @@ from ._datetime import get_datetime
 from ._levels import Level, LevelDoesNotExistError, get_defaults
 from ._record import Record
 from ._sink import Sink, SinkDoesNotExistError, SyncSink
-from ._traceback import extract_stack, get_frame
+from ._traceback import get_frame
 from .colours import Colour, should_colourise, should_wrap, wrap
 
 if TYPE_CHECKING:
@@ -158,7 +158,7 @@ class Logger:
             global_name,
             level,
             get_datetime(),
-            extract_stack(frame),
+            frame,
             str(message),
             current_process(),
             current_thread(),

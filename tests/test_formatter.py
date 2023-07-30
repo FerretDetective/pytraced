@@ -2,13 +2,13 @@ from datetime import datetime
 from multiprocessing import current_process
 from os.path import basename
 from pathlib import Path
+from sys import _getframe
 from threading import current_thread
-from traceback import format_exception, format_list
+from traceback import extract_stack, format_exception, format_list
 
 from pytraced import Config, Level, Record
 from pytraced._config import TraceStyle
 from pytraced._formatter import _format, _format_date_time, _format_path, format_record
-from pytraced._traceback import extract_stack, get_frame
 from pytraced.colours import FgColour, add_colours
 
 
@@ -39,8 +39,8 @@ def test_format() -> None:
     logger_name = "record"
     global_name = "__name__"
     level = Level("level", 0)
-    date_time = datetime.now()
-    stack_trace = extract_stack(get_frame())
+    date_time = datetime.now().astimezone()
+    frame = _getframe(1)
     message = "message"
     process = current_process()
     thread = current_thread()
@@ -55,7 +55,7 @@ def test_format() -> None:
         global_name,
         level,
         date_time,
-        stack_trace,
+        frame,
         message,
         process,
         thread,
@@ -72,32 +72,32 @@ def test_format() -> None:
     assert _format("%{tid}%", record, config) == str(thread.ident)
     assert _format("%{msg}%", record, config) == message
 
-    config.date_fmt = "%c"
+    config.date_fmt = "%c %Z %z"
     assert _format("%{date_time}%", record, config) == date_time.strftime(
         config.date_fmt
     )
 
     config.trace_style = TraceStyle.BARE
     assert _format("%{trace}%", record, config) == (
-        f"{basename(stack_trace[0].filename)}:{stack_trace[0].lineno}"
+        f"{basename(frame.f_code.co_filename)}:{frame.f_lineno}"
     )
     config.trace_style = TraceStyle.SIMPLE
     assert _format("%{trace}%", record, config) == (
-        f"{global_name}@{stack_trace[0].name}:{stack_trace[0].lineno}"
+        f"{global_name}@{frame.f_code.co_name}:{frame.f_lineno}"
     )
     config.trace_style = TraceStyle.CLEAN
     assert _format("%{trace}%", record, config) == (
-        f"{_format_path(stack_trace[0].filename)}@"
-        f"{stack_trace[0].name}:{stack_trace[0].lineno}"
+        f"{_format_path(frame.f_code.co_filename)}@"
+        f"{frame.f_code.co_name}:{frame.f_lineno}"
     )
     config.trace_style = TraceStyle.DETAILED
     assert _format("%{trace}%", record, config) == " -> ".join(
         f"{_format_path(trace.filename)}@{trace.name}:{trace.lineno}"
-        for trace in reversed(record.stack_trace)
+        for trace in extract_stack(record.frame)
     )
     config.trace_style = TraceStyle.FULL
     assert _format("%{trace}%", record, config) == "\n{}\n".format(
-        "\n".join(format_list(record.stack_trace[::-1]))
+        "\n".join(format_list(extract_stack(record.frame)))
     )
 
     # test for infinite recursion
@@ -109,7 +109,7 @@ def test_format() -> None:
                 global_name,
                 level,
                 date_time,
-                stack_trace,
+                frame,
                 "%{msg}%",
                 process,
                 thread,
@@ -126,7 +126,7 @@ def test_format_record() -> None:
     global_name = "__name__"
     level = Level("level", 0)
     date_time = datetime.now()
-    stack_trace = extract_stack(get_frame())
+    frame = _getframe(1)
     message = "message"
     process = current_process()
     thread = current_thread()
@@ -143,7 +143,7 @@ def test_format_record() -> None:
             global_name,
             level,
             date_time,
-            stack_trace,
+            frame,
             message,
             process,
             thread,
@@ -158,7 +158,7 @@ def test_format_record() -> None:
                 global_name,
                 level,
                 date_time,
-                stack_trace,
+                frame,
                 message,
                 process,
                 thread,
@@ -175,7 +175,7 @@ def test_format_record() -> None:
                 global_name,
                 level,
                 date_time,
-                stack_trace,
+                frame,
                 message,
                 process,
                 thread,
@@ -194,7 +194,7 @@ def test_format_record() -> None:
                 global_name,
                 Level("level", 0, [FgColour.BLACK]),
                 date_time,
-                stack_trace,
+                frame,
                 message,
                 process,
                 thread,
@@ -210,7 +210,7 @@ def test_format_record() -> None:
             global_name,
             Level("level", 0, [FgColour.BLACK]),
             date_time,
-            stack_trace,
+            frame,
             message,
             process,
             thread,

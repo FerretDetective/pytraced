@@ -1,7 +1,7 @@
 from datetime import datetime
 from multiprocessing import current_process
+from sys import _getframe
 from threading import current_thread
-from traceback import extract_stack
 
 from pytraced import Level, Record
 
@@ -11,7 +11,7 @@ def test_record_creation() -> None:
     global_name = "__name__"
     level = Level("level", 0)
     date_time = datetime.now()
-    stack_trace = extract_stack()
+    stack_trace = _getframe()
     message = "message"
     process = current_process()
     thread = current_thread()
@@ -37,7 +37,7 @@ def test_record_creation() -> None:
     assert record.global_name is global_name
     assert record.level is level
     assert record.date_time is date_time
-    assert record.stack_trace is stack_trace
+    assert record.frame is stack_trace
     assert record.message is message
     assert record.process is process
     assert record.thread is thread
