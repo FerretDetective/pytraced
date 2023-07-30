@@ -1,7 +1,7 @@
 """
 pytraced:
 
-version: 0.1.1
+version: 0.1.2
 
 A simple, lightweight, & extensible logging library for python. This library provides an out of the
 box logger which prints to `stderr`, however it is extremely customizable to fit a wide range of 
