@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from atexit import register as atexit_register
 from contextlib import contextmanager
-from datetime import datetime
 from functools import wraps
 from multiprocessing import current_process
 from os import PathLike
@@ -27,6 +26,7 @@ from typing import (
 )
 
 from ._config import Config
+from ._datetime import get_datetime
 from ._levels import Level, LevelDoesNotExistError, get_defaults
 from ._record import Record
 from ._sink import Sink, SinkDoesNotExistError, SyncSink
@@ -157,7 +157,7 @@ class Logger:
             self.name,
             global_name,
             level,
-            datetime.now().astimezone(),
+            get_datetime(),
             extract_stack(frame),
             str(message),
             current_process(),
