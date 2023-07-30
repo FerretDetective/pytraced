@@ -11,7 +11,6 @@ from functools import lru_cache
 from os.path import basename
 from pathlib import Path
 from traceback import format_exception, format_list
-from typing import cast
 
 from ._config import Config, FormatLiteral, TraceStyle
 from ._record import Record
@@ -76,9 +75,7 @@ def _format(
             case FormatLiteral.LEVEL.value:
                 logging_string += record.level.name
             case FormatLiteral.DATE_TIME.value:
-                logging_string += _format_date_time(
-                    record.date_time, cast(str, config.date_fmt)
-                )
+                logging_string += _format_date_time(record.date_time, config.date_fmt)
             case FormatLiteral.TRACE.value:
                 match config.trace_style:
                     case TraceStyle.BARE:
@@ -136,7 +133,7 @@ def format_record(record: Record, config: Config) -> str:
 
     Returns: `str` - Formatted logging string ready for printing.
     """
-    logging_string = _format(cast(str, config.formatter), record, config)
+    logging_string = _format(config.formatter, record, config)  # type: ignore
 
     if record.exception:
         # make sure the exception is on a newline unless the log is empty
