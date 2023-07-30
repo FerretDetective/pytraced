@@ -110,6 +110,9 @@ class Logger:
 
         Returns: `bool` - Whether or not the module is disabled.
         """
+        if not self._disabled_for:
+            return False
+
         mod_name, *parts = name.split(".")
 
         if mod_name in self._disabled_for:
