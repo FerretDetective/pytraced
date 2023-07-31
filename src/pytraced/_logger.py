@@ -9,15 +9,18 @@ Classes:
 from __future__ import annotations
 
 from atexit import register as atexit_register
-from contextlib import contextmanager
 from functools import wraps
+from inspect import isasyncgenfunction, iscoroutinefunction, isgeneratorfunction
 from multiprocessing import current_process
 from os import PathLike
 from pathlib import Path
 from threading import current_thread
 from typing import (
     TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
     Callable,
+    ContextManager,
     Generator,
     Iterable,
     Iterator,
@@ -25,6 +28,7 @@ from typing import (
     TypeVar,
 )
 
+from ._catcher import Catcher
 from ._config import Config
 from ._datetime import get_datetime
 from ._levels import Level, LevelDoesNotExistError, get_defaults
@@ -38,7 +42,6 @@ if TYPE_CHECKING:
 
     P = ParamSpec("P")
     R = TypeVar("R")
-    T = TypeVar("T")
     E = TypeVar("E", bound=BaseException)
 
 
@@ -133,7 +136,7 @@ class Logger:
         stack_level: int = 2,
     ) -> None:
         """
-        Record a `Record` and propagate it to all of the `Logger`'s `Sink`s.
+        Create a `Record` and propagate it to all of the `Logger`'s `Sink`s.
 
         Parameters:
             - `level: str | Level` - Severity of the log.
@@ -141,6 +144,9 @@ class Logger:
             - `exception: BaseException | None = None` - Optional exception to print with the log.
             - `stack_level: int = 2` - Int which stores how many calls back the logger called from.
         """
+        if not self._sinks.values():
+            return
+
         frame = get_frame(stack_level)
         global_name: str = frame.f_globals["__name__"]
 
@@ -278,18 +284,71 @@ class Logger:
         """
 
         def _decorator(func: Callable[P, R]) -> Callable[P, R]:
-            @wraps(func)
-            def _inner(*args: P.args, **kwargs: P.kwargs) -> R:
-                self._log(
-                    level,
-                    f"Function {func.__name__!r} called with args: "
-                    f"{args!r} and kwargs: {kwargs!r}",
-                )
-                res = func(*args, **kwargs)
-                self._log(level, f"Function: {func.__name__!r} returned {res!r}")
-                return res
+            if isgeneratorfunction(func):
 
-            return _inner
+                @wraps(func)
+                def _log_wrapper(
+                    *args: P.args, **kwargs: P.kwargs
+                ) -> Generator[Any, Any, Any]:
+                    self._log(
+                        level,
+                        f"Generator {func.__name__!r} called with args: "
+                        f"{args!r} and kwargs: {kwargs!r}",
+                    )
+                    for res in func(*args, **kwargs):
+                        self._log(
+                            level,
+                            f"Generator {func.__name__!r} yielded {res!r}",
+                        )
+                        yield res
+
+            elif isasyncgenfunction(func):
+
+                @wraps(func)
+                async def _log_wrapper(
+                    *args: P.args, **kwargs: P.kwargs
+                ) -> AsyncGenerator[Any, Any]:
+                    self._log(
+                        level,
+                        f"Async generator {func.__name__!r} called with args: "
+                        f"{args!r} and kwargs: {kwargs!r}",
+                    )
+                    async for res in func(*args, **kwargs):
+                        self._log(
+                            level,
+                            f"Async generator {func.__name__!r} yielded {res!r}",
+                        )
+                        yield res
+
+            elif iscoroutinefunction(func):
+
+                @wraps(func)
+                async def _log_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                    self._log(
+                        level,
+                        f"Async function {func.__name__!r} called with args: "
+                        f"{args!r} and kwargs: {kwargs!r}",
+                    )
+                    res = await func(*args, **kwargs)
+                    self._log(
+                        level, f"Async function {func.__name__!r} returned {res!r}"
+                    )
+                    return res
+
+            else:
+
+                @wraps(func)
+                def _log_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                    self._log(
+                        level,
+                        f"Function {func.__name__!r} called with args: "
+                        f"{args!r} and kwargs: {kwargs!r}",
+                    )
+                    res = func(*args, **kwargs)
+                    self._log(level, f"Function: {func.__name__!r} returned {res!r}")
+                    return res
+
+            return _log_wrapper  # type: ignore
 
         return _decorator
 
@@ -300,11 +359,11 @@ class Logger:
             "in process %{pname}% (%{pid}%), on thread %{tname}% (%{tid}%)"
         ),
         level: str | Level = "ERROR",
-        default: T = None,  # type: ignore
+        default: object = None,
         reraise: bool = False,
         exception_type: type[E] = Exception,  # type: ignore
         on_error: Callable[[E], None] | None = None,
-    ) -> Callable[[Callable[P, R]], Callable[P, R | T]]:
+    ) -> Callable[[Callable[P, R]], Callable[P, R]]:
         """
         Function decorator which catches errors that occur during the execution of the decorated
         function.
@@ -313,39 +372,63 @@ class Logger:
             - `message: object = ...` - Additional information to add to the log. Default
                                         information is the process's & thread's name and id.
             - `level: str | Level = "Error"` - String name of an existing level or a `Level` object.
-            - `default: T = None` - Default value to return if an exception is caught.
+            - `default: object = None` - Default value to return if an exception is caught.
             - `reraise: bool = False` - Whether or not to reraise exceptions that have been caught.
             - `exception_type: type[E] = Exception` - Exception type that will be caught.
             - `on_error: Callable[[E], None] | None = None` - Optional function that will be called
                                                               with the exception that was caught.
         """
 
-        def _decorator(func: Callable[P, R]) -> Callable[P, R | T]:
-            @wraps(func)
-            def _inner(*args: P.args, **kwargs: P.kwargs) -> R | T:
-                # pylint: disable=broad-exception-caught
-                try:
-                    return func(*args, **kwargs)
-                except exception_type as exception:
-                    self._log(
-                        level,
-                        str(message).replace("%{func}%", func.__name__),
-                        exception,
-                    )
+        def _decorator(func: Callable[P, R]) -> Callable[P, R]:
+            catcher = Catcher(
+                True,
+                self,
+                str(message).replace("%{func}%", func.__name__),
+                level,
+                exception_type,
+                reraise,
+                on_error,
+            )
 
-                    if on_error is not None:
-                        on_error(exception)
+            if isgeneratorfunction(func):
 
-                    if reraise:
-                        raise
+                @wraps(func)
+                def _catch_wrapper(
+                    *args: P.args, **kwargs: P.kwargs
+                ) -> Generator[Any, Any, Any]:
+                    with catcher:
+                        return (yield from func(*args, **kwargs))
 
+            elif isasyncgenfunction(func):
+
+                @wraps(func)
+                async def _catch_wrapper(
+                    *args: P.args, **kwargs: P.kwargs
+                ) -> AsyncGenerator[Any, Any]:
+                    with catcher:
+                        async for res in func(*args, **kwargs):
+                            yield res
+
+            elif iscoroutinefunction(func):
+
+                @wraps(func)
+                async def _catch_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                    with catcher:
+                        return await func(*args, **kwargs)
                     return default
 
-            return _inner
+            else:
+
+                @wraps(func)
+                def _catch_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                    with catcher:
+                        return func(*args, **kwargs)
+                    return default
+
+            return _catch_wrapper  # type: ignore
 
         return _decorator
 
-    @contextmanager
     def catch_context(
         self,
         message: object = (
@@ -356,7 +439,7 @@ class Logger:
         reraise: bool = False,
         exception_type: type[E] = Exception,  # type: ignore
         on_error: Callable[[E], None] | None = None,
-    ) -> Generator[None, None, None]:
+    ) -> ContextManager[None]:
         """
         Context manager which catches errors that occur during the execution of the body.
 
@@ -369,16 +452,7 @@ class Logger:
             - `on_error: Callable[[E], None] | None = None` - Optional function that will be called
                                                               with the exception that was caught.
         """
-        try:
-            yield
-        except exception_type as exception:  # pylint: disable=broad-exception-caught
-            self._log(level, message, exception, stack_level=3)
-
-            if on_error is not None:
-                on_error(exception)
-
-            if reraise:
-                raise
+        return Catcher(False, self, message, level, exception_type, reraise, on_error)
 
     def add(
         self,
