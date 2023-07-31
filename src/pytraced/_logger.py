@@ -9,6 +9,7 @@ Classes:
 from __future__ import annotations
 
 from atexit import register as atexit_register
+from datetime import datetime
 from functools import wraps
 from inspect import isasyncgenfunction, iscoroutinefunction, isgeneratorfunction
 from multiprocessing import current_process
@@ -30,7 +31,6 @@ from typing import (
 
 from ._catcher import Catcher
 from ._config import Config
-from ._datetime import get_datetime
 from ._levels import Level, LevelDoesNotExistError, get_defaults
 from ._record import Record
 from ._sink import Sink, SinkDoesNotExistError, SyncSink
@@ -163,7 +163,7 @@ class Logger:
             self.name,
             global_name,
             level,
-            get_datetime(),
+            datetime.now().astimezone(),
             frame,
             str(message),
             current_process(),
