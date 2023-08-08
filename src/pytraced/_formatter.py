@@ -10,7 +10,7 @@ from datetime import datetime
 from functools import lru_cache
 from os.path import basename
 from pathlib import Path
-from traceback import extract_stack, format_exception, format_list
+from traceback import extract_stack, format_exception, format_stack
 
 from ._config import Config, FormatLiteral, TraceStyle
 from ._record import Record
@@ -102,7 +102,7 @@ def _format(
                         )
                     case TraceStyle.FULL:
                         logging_string += "\n{}\n".format(
-                            "\n".join(format_list(extract_stack(record.frame)))
+                            "\n".join(format_stack(record.frame))
                         )
             case FormatLiteral.GLOBAL_NAME.value:
                 logging_string += record.global_name
