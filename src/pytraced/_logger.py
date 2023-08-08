@@ -301,6 +301,7 @@ class Logger:
                             f"Generator {func.__name__!r} yielded {res!r}",
                         )
                         yield res
+                    self._log(level, f"Generator {func.__name__!r} exhausted")
 
             elif isasyncgenfunction(func):
 
@@ -319,6 +320,7 @@ class Logger:
                             f"Async generator {func.__name__!r} yielded {res!r}",
                         )
                         yield res
+                    self._log(level, f"Async generator {func.__name__!r} exhausted")
 
             elif iscoroutinefunction(func):
 
