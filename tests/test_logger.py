@@ -83,6 +83,18 @@ def test_is_disabled_for() -> None:
 
 
 def test_priv_log() -> None:
+    # skip empty _sinks
+    was_called = False
+
+    class TestSkip(Logger):
+        def _is_disabled_for(self, name: str) -> bool:
+            nonlocal was_called
+            was_called = True
+            return super()._is_disabled_for(name)
+
+    TestSkip("TEST")._log("LOG", "message")
+    assert not was_called
+
     io, logger = get_stringio_logger(get_config(lambda record: record.message))
 
     # skip disabled
