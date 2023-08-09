@@ -253,43 +253,181 @@ def test_log_func() -> None:
 
 
 def test_catch_func() -> None:
+    # Normal function
     io, logger = get_stringio_logger(get_config(lambda record: record.message))
 
+    ## test message
     @logger.catch_func("caught-error")
     def error_caught(a: int, b: int) -> float:
-        return a / b
-
-    @logger.catch_func(reraise=True)
-    def error_reraised(a: int, b: int) -> float:
-        return a / b
-
-    on_error_called = False
-
-    def on_error(_: BaseException) -> None:
-        nonlocal on_error_called
-        on_error_called = True
-
-    @logger.catch_func(on_error=on_error)
-    def on_err(a: int, b: int) -> float:
-        return a / b
-
-    DEFAULT = object()
-
-    @logger.catch_func(default=DEFAULT)
-    def default(a: int, b: int) -> float:
         return a / b
 
     error_caught(1, 0)
     io.seek(0)
     assert io.read() == "caught-error"
 
+    ## test reraise
+    @logger.catch_func(reraise=True)
+    def error_reraised(a: int, b: int) -> float:
+        return a / b
+
     with raises(ZeroDivisionError):
         error_reraised(1, 0)
 
-    on_err(1, 0)
+    ## test on_error
+    on_error_called = False
+
+    def on_err_callback(_: BaseException) -> None:
+        nonlocal on_error_called
+        on_error_called = True
+
+    @logger.catch_func(on_error=on_err_callback)
+    def on_error(a: int, b: int) -> float:
+        return a / b
+
+    on_error(1, 0)
     assert on_error_called
 
+    ## test default
+    DEFAULT = object()
+
+    @logger.catch_func(default=DEFAULT)
+    def default(a: int, b: int) -> float:
+        return a / b
+
     assert default(1, 0) is DEFAULT
+
+
+def test_catch_func_async() -> None:
+    # Async function
+    io, logger = get_stringio_logger(get_config(lambda record: record.message))
+
+    ## test message
+    @logger.catch_func("caught-error")
+    async def async_error_caught(a: int, b: int) -> float:
+        return a / b
+
+    run(async_error_caught(1, 0))
+    io.seek(0)
+    assert io.read() == "caught-error"
+
+    ## test reraise
+    @logger.catch_func(reraise=True)
+    async def async_error_reraised(a: int, b: int) -> float:
+        return a / b
+
+    with raises(ZeroDivisionError):
+        run(async_error_reraised(1, 0))
+
+    ## test on_error
+    async_on_error_called = False
+
+    def async_on_err_callback(_: BaseException) -> None:
+        nonlocal async_on_error_called
+        async_on_error_called = True
+
+    @logger.catch_func(on_error=async_on_err_callback)
+    async def async_on_error(a: int, b: int) -> float:
+        return a / b
+
+    run(async_on_error(1, 0))
+    assert async_on_error_called
+
+    ## test default
+    DEFAULT = object()
+
+    @logger.catch_func(default=DEFAULT)
+    async def async_default(a: int, b: int) -> float:
+        return a / b
+
+    assert run(async_default(1, 0)) is DEFAULT
+
+
+def test_catch_func_generator() -> None:
+    # Generator function
+    io, logger = get_stringio_logger(get_config(lambda record: record.message))
+
+    ## test message
+    @logger.catch_func("caught-error")
+    def generator_error_caught(a: int, b: int) -> Iterator[float]:
+        yield a / b
+
+    with raises(StopIteration):
+        next(generator_error_caught(1, 0))
+    io.seek(0)
+    assert io.read() == "caught-error"
+
+    ## test reraise
+    @logger.catch_func(reraise=True)
+    def generator_error_reraised(a: int, b: int) -> Iterator[float]:
+        yield a / b
+
+    with raises(ZeroDivisionError):
+        next(generator_error_reraised(1, 0))
+
+    ## test on_error
+    generator_on_error_called = False
+
+    def generator_on_err_callback(_: BaseException) -> None:
+        nonlocal generator_on_error_called
+        generator_on_error_called = True
+
+    @logger.catch_func(on_error=generator_on_err_callback)
+    def generator_on_error(a: int, b: int) -> Iterator[float]:
+        yield a / b
+
+    with raises(StopIteration):
+        next(generator_on_error(1, 0))
+    assert generator_on_error_called
+
+
+def test_catch_func_async_generator() -> None:
+    # Async generator function
+    io, logger = get_stringio_logger(get_config(lambda record: record.message))
+
+    async def do_async_tests() -> None:
+        ## test yields from
+        @logger.catch_func()
+        async def async_generator_yields_from(a: int, b: int) -> AsyncIterator[float]:
+            yield a / b
+
+        assert await anext(async_generator_yields_from(1, 2)) == 1 / 2
+
+        ## test message
+        @logger.catch_func("caught-error")
+        async def async_generator_error_caught(a: int, b: int) -> AsyncIterator[float]:
+            yield a / b
+
+        with raises(StopAsyncIteration):
+            await anext(async_generator_error_caught(1, 0))
+        io.seek(0)
+        assert io.read() == "caught-error"
+
+        ## test reraise
+        @logger.catch_func(reraise=True)
+        async def async_generator_error_reraised(
+            a: int, b: int
+        ) -> AsyncIterator[float]:
+            yield a / b
+
+        with raises(ZeroDivisionError):
+            await anext(async_generator_error_reraised(1, 0))
+
+        ## test on_error
+        async_generator_on_error_called = False
+
+        def async_generator_on_err_callback(_: BaseException) -> None:
+            nonlocal async_generator_on_error_called
+            async_generator_on_error_called = True
+
+        @logger.catch_func(on_error=async_generator_on_err_callback)
+        async def async_generator_on_error(a: int, b: int) -> AsyncIterator[float]:
+            yield a / b
+
+        with raises(StopAsyncIteration):
+            await anext(async_generator_on_error(1, 0))
+        assert async_generator_on_error_called
+
+    run(do_async_tests())
 
 
 def test_catch_context() -> None:
