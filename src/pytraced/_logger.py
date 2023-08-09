@@ -173,7 +173,8 @@ class Logger:
 
         for sink in self._sinks.values():
             if record.level.severity < sink.config.min_level or (
-                sink.config.filter_func and not sink.config.filter_func(record)
+                sink.config.filter_func is not None
+                and not sink.config.filter_func(record)
             ):
                 continue
 
@@ -538,16 +539,15 @@ class Logger:
         if isinstance(min_level, Level):
             min_level = min_level.severity
         elif isinstance(min_level, str):
-            if (level := self._levels.get(min_level)) is None:
+            level = self._levels.get(min_level)
+            if level is None:
                 raise LevelDoesNotExistError(
                     f"logging level of {min_level!r} does not exist"
                 )
             min_level = level.severity
 
-        if isinstance(log_format, Config):
-            config = log_format
-        else:
-            config = Config(
+        if not isinstance(log_format, Config):
+            log_format = Config(
                 log_format=log_format,
                 filter_func=log_filter,
                 colourise=should_colourise(out) and colourise,
@@ -555,7 +555,7 @@ class Logger:
             )
 
         self._sinks[sink_id] = SyncSink(
-            wrap(out) if should_wrap(out) else out, on_remove, config
+            wrap(out) if should_wrap(out) else out, on_remove, log_format
         )
 
         return sink_id
