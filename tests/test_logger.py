@@ -197,8 +197,9 @@ def test_log_func() -> None:
     assert dummy.__name__ in first and repr(args) in first
     assert dummy.__name__ in second and repr(result) in second
 
-    io.truncate(0)
-    io.seek(0)
+
+def test_log_func_async() -> None:
+    io, logger = get_stringio_logger(get_config("%{msg}%"))
 
     @logger.log_func("LOG")
     async def async_dummy(a: int, b: str) -> tuple[str, int]:
@@ -212,8 +213,9 @@ def test_log_func() -> None:
     assert async_dummy.__name__ in first and repr(args) in first
     assert async_dummy.__name__ in second and repr(result) in second
 
-    io.truncate(0)
-    io.seek(0)
+
+def test_log_func_generator() -> None:
+    io, logger = get_stringio_logger(get_config("%{msg}%"))
 
     @logger.log_func("LOG")
     def gen_dummy(a: int, b: str) -> Iterator[int | str]:
@@ -230,8 +232,9 @@ def test_log_func() -> None:
         assert gen_dummy.__name__ in line and repr(res) in line
     assert gen_dummy.__name__ in last and "exhausted" in last
 
-    io.truncate(0)
-    io.seek(0)
+
+def test_log_func_async_generator() -> None:
+    io, logger = get_stringio_logger(get_config("%{msg}%"))
 
     @logger.log_func("LOG")
     async def async_gen_dummy(a: int, b: str) -> AsyncIterator[int | str]:
