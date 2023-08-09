@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from atexit import register as atexit_register
 from datetime import datetime
-from functools import wraps
+from functools import partial, wraps
 from inspect import isasyncgenfunction, iscoroutinefunction, isgeneratorfunction
 from multiprocessing import current_process
 from os import PathLike
@@ -358,7 +358,7 @@ class Logger:
     def catch_func(
         self,
         message: object = (
-            "An error has been caught in function '%{func}%', "
+            "An error has been caught in %{ftype}% '%{fname}%', "
             "in process %{pname}% (%{pid}%), on thread %{tname}% (%{tid}%)"
         ),
         level: str | Level = "ERROR",
@@ -383,15 +383,17 @@ class Logger:
         """
 
         def _decorator(func: Callable[P, R]) -> Callable[P, R]:
-            catcher = Catcher(
-                True,
-                self,
-                str(message).replace("%{func}%", func.__name__),
-                level,
-                exception_type,
-                reraise,
-                on_error,
+            catcher = partial(
+                Catcher,
+                from_decorator=True,
+                logger=self,
+                level=level,
+                exception_type=exception_type,
+                reraise=reraise,
+                on_error=on_error,
             )
+
+            string_message = str(message).replace("%{fname}%", func.__name__)
 
             if isgeneratorfunction(func):
 
@@ -399,7 +401,9 @@ class Logger:
                 def _catch_wrapper(
                     *args: P.args, **kwargs: P.kwargs
                 ) -> Generator[Any, Any, Any]:
-                    with catcher:
+                    with catcher(
+                        message=string_message.replace("%{ftype}%", "generator")
+                    ):
                         return (yield from func(*args, **kwargs))
 
             elif isasyncgenfunction(func):
@@ -408,7 +412,9 @@ class Logger:
                 async def _catch_wrapper(
                     *args: P.args, **kwargs: P.kwargs
                 ) -> AsyncGenerator[Any, Any]:
-                    with catcher:
+                    with catcher(
+                        message=string_message.replace("%{ftype}%", "async generator")
+                    ):
                         async for res in func(*args, **kwargs):
                             yield res
 
@@ -416,7 +422,9 @@ class Logger:
 
                 @wraps(func)
                 async def _catch_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
-                    with catcher:
+                    with catcher(
+                        message=string_message.replace("%{ftype}%", "async function")
+                    ):
                         return await func(*args, **kwargs)
                     return default
 
@@ -424,7 +432,9 @@ class Logger:
 
                 @wraps(func)
                 def _catch_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
-                    with catcher:
+                    with catcher(
+                        message=string_message.replace("%{ftype}%", "function")
+                    ):
                         return func(*args, **kwargs)
                     return default
 
