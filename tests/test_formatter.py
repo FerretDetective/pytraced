@@ -44,6 +44,10 @@ def test_format() -> None:
     message = "message"
     process = current_process()
     thread = current_thread()
+    extra_info = {
+        "%{test-extra-info}%": "test-extra-info",
+        "%{test-extra-info2}%": "test-extra-info2",
+    }
 
     try:
         raise Exception  # pylint: disable=broad-exception-raised
@@ -59,6 +63,7 @@ def test_format() -> None:
         message,
         process,
         thread,
+        extra_info,
         exception,  # pylint: disable=used-before-assignment
     )
     config = Config("", None, False, 0)
@@ -100,6 +105,11 @@ def test_format() -> None:
         "\n".join(format_list(extract_stack(record.frame)))
     )
 
+    assert (
+        _format("%{test-extra-info}%%{test-extra-info2}%", record, config)
+        == "test-extra-infotest-extra-info2"
+    )
+
     # test for infinite recursion
     assert (
         _format(
@@ -113,6 +123,7 @@ def test_format() -> None:
                 "%{msg}%",
                 process,
                 thread,
+                extra_info,
                 exception,  # pylint: disable=used-before-assignment
             ),
             config,
@@ -147,6 +158,7 @@ def test_format_record() -> None:
             message,
             process,
             thread,
+            None,
             exception,  # pylint: disable=used-before-assignment
         ),
         Config("", None, False, 0),
@@ -162,6 +174,7 @@ def test_format_record() -> None:
                 message,
                 process,
                 thread,
+                None,
                 exception,  # pylint: disable=used-before-assignment
             ),
             Config("TEST", None, False, 0),
@@ -179,6 +192,7 @@ def test_format_record() -> None:
                 message,
                 process,
                 thread,
+                None,
                 None,
             ),
             Config("", None, False, 0),
@@ -199,6 +213,7 @@ def test_format_record() -> None:
                 process,
                 thread,
                 None,
+                None,
             ),
             Config("TEST", None, False, 0),
         )
@@ -214,6 +229,7 @@ def test_format_record() -> None:
             message,
             process,
             thread,
+            None,
             None,
         ),
         Config("TEST", None, True, 0),

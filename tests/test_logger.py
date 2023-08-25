@@ -188,7 +188,7 @@ def test_log_exception() -> None:
     try:
         raise ZeroDivisionError
     except ZeroDivisionError as e:
-        logger.log_exception(e, "logged-error")
+        logger.exception(e, message="logged-error")
 
     io.seek(0)
     assert io.read() == "logged-error"
@@ -272,7 +272,7 @@ def test_catch_func() -> None:
     io, logger = get_stringio_logger(get_config(lambda record: record.message))
 
     ## test message
-    @logger.catch_func("caught-error")
+    @logger.catch_func(message="caught-error")
     def error_caught(a: int, b: int) -> float:
         return a / b
 
@@ -317,7 +317,7 @@ def test_catch_func_async() -> None:
     io, logger = get_stringio_logger(get_config(lambda record: record.message))
 
     ## test message
-    @logger.catch_func("caught-error")
+    @logger.catch_func(message="caught-error")
     async def async_error_caught(a: int, b: int) -> float:
         return a / b
 
@@ -362,7 +362,7 @@ def test_catch_func_generator() -> None:
     io, logger = get_stringio_logger(get_config(lambda record: record.message))
 
     ## test message
-    @logger.catch_func("caught-error")
+    @logger.catch_func(message="caught-error")
     def generator_error_caught(a: int, b: int) -> Iterator[float]:
         yield a / b
 
@@ -408,7 +408,7 @@ def test_catch_func_async_generator() -> None:
         assert await anext(async_generator_yields_from(1, 2)) == 1 / 2
 
         ## test message
-        @logger.catch_func("caught-error")
+        @logger.catch_func(message="caught-error")
         async def async_generator_error_caught(a: int, b: int) -> AsyncIterator[float]:
             yield a / b
 
@@ -448,7 +448,7 @@ def test_catch_func_async_generator() -> None:
 def test_catch_context() -> None:
     io, logger = get_stringio_logger(get_config(lambda record: record.message))
 
-    with logger.catch_context("error-caught"):
+    with logger.catch_context(message="error-caught"):
         _x = 0 / 0
 
     io.seek(0)

@@ -39,6 +39,7 @@ def test_sink_format() -> None:
                 current_process(),
                 current_thread(),
                 None,
+                None,
             )
         )
         == f"{__name__}\n"
@@ -54,6 +55,7 @@ def test_sink_format() -> None:
                 "MESSAGE",
                 current_process(),
                 current_thread(),
+                None,
                 None,
             )
         )

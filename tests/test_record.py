@@ -15,6 +15,7 @@ def test_record_creation() -> None:
     message = "message"
     process = current_process()
     thread = current_thread()
+    extra_info = {"123": 123}
 
     try:
         raise Exception  # pylint: disable=broad-exception-raised
@@ -30,6 +31,7 @@ def test_record_creation() -> None:
         message,
         process,
         thread,
+        extra_info,
         exception,  # pylint: disable=used-before-assignment
     )
 
@@ -41,4 +43,5 @@ def test_record_creation() -> None:
     assert record.message is message
     assert record.process is process
     assert record.thread is thread
+    assert record.extra_info is extra_info
     assert record.exception is exception
