@@ -12,7 +12,7 @@ from os.path import basename
 from pathlib import Path
 from traceback import extract_stack, format_exception, format_stack
 
-from ._config import Config, FormatLiteral, TraceStyle
+from ._config import Config, FormatLiteral, InvalidFormatSpecifierError, TraceStyle
 from ._record import Record
 from .colours import add_colours
 
@@ -61,6 +61,10 @@ def _format(
         - `config: Config` - Config which controls whether or not to add certain info to the log.
 
     Returns: `str` - String containing the info from the record according the to config.
+
+    Raises:
+        - `InvalidFormatSpecifierError` - Raised if a format specifier cannot be matched to
+                                          `extra_info` or default types.
     """
     last_end = 0
     logging_string = ""
@@ -69,56 +73,69 @@ def _format(
         last_end = match.end()
         cur_fmt = match.group()
 
-        match cur_fmt:
-            case FormatLiteral.NAME.value:
-                logging_string += record.logger_name
-            case FormatLiteral.LEVEL.value:
-                logging_string += record.level.name
-            case FormatLiteral.DATE_TIME.value:
-                logging_string += _format_date_time(record.date_time, config.date_fmt)
-            case FormatLiteral.TRACE.value:
-                match config.trace_style:
-                    case TraceStyle.BARE:
-                        logging_string += (
-                            f"{basename(record.frame.f_code.co_filename)}:"
-                            f"{record.frame.f_lineno}"
+        if cur_fmt == FormatLiteral.NAME.value:
+            logging_string += record.logger_name
+        elif cur_fmt == FormatLiteral.LEVEL.value:
+            logging_string += record.level.name
+        elif cur_fmt == FormatLiteral.DATE_TIME.value:
+            logging_string += _format_date_time(record.date_time, config.date_fmt)
+        elif cur_fmt == FormatLiteral.TRACE.value:
+            match config.trace_style:
+                case TraceStyle.BARE:
+                    logging_string += (
+                        f"{basename(record.frame.f_code.co_filename)}:"
+                        f"{record.frame.f_lineno}"
+                    )
+                case TraceStyle.SIMPLE:
+                    logging_string += (
+                        f"{record.global_name}@{record.frame.f_code.co_name}"
+                        f":{record.frame.f_lineno}"
+                    )
+                case TraceStyle.CLEAN:
+                    logging_string += (
+                        f"{_format_path(record.frame.f_code.co_filename)}@"
+                        f"{record.frame.f_code.co_name}:{record.frame.f_lineno}"
+                    )
+                case TraceStyle.DETAILED:
+                    logging_string += " -> ".join(
+                        (
+                            f"{_format_path(trace.filename)}@{trace.name}:{trace.lineno}"
+                            for trace in extract_stack(record.frame)
                         )
-                    case TraceStyle.SIMPLE:
-                        logging_string += (
-                            f"{record.global_name}@{record.frame.f_code.co_name}"
-                            f":{record.frame.f_lineno}"
-                        )
-                    case TraceStyle.CLEAN:
-                        logging_string += (
-                            f"{_format_path(record.frame.f_code.co_filename)}@"
-                            f"{record.frame.f_code.co_name}:{record.frame.f_lineno}"
-                        )
-                    case TraceStyle.DETAILED:
-                        logging_string += " -> ".join(
-                            (
-                                f"{_format_path(trace.filename)}@{trace.name}:{trace.lineno}"
-                                for trace in extract_stack(record.frame)
-                            )
-                        )
-                    case TraceStyle.FULL:
-                        logging_string += "\n{}\n".format(
-                            "\n".join(format_stack(record.frame))
-                        )
-            case FormatLiteral.GLOBAL_NAME.value:
-                logging_string += record.global_name
-            case FormatLiteral.PROCESS_NAME.value:
-                logging_string += record.process.name
-            case FormatLiteral.PROCESS_ID.value:
-                logging_string += str(record.process.ident)
-            case FormatLiteral.THREAD_NAME.value:
-                logging_string += record.thread.name
-            case FormatLiteral.THREAD_ID.value:
-                logging_string += str(record.thread.ident)
-            case FormatLiteral.MESSAGE.value:
-                if _from_msg:
-                    logging_string += record.message
-                else:
-                    logging_string += _format(record.message, record, config, True)
+                    )
+                case TraceStyle.FULL:
+                    logging_string += "\n{}\n".format(
+                        "\n".join(format_stack(record.frame))
+                    )
+        elif cur_fmt == FormatLiteral.GLOBAL_NAME.value:
+            logging_string += record.global_name
+        elif cur_fmt == FormatLiteral.PROCESS_NAME.value:
+            logging_string += record.process.name
+        elif cur_fmt == FormatLiteral.PROCESS_ID.value:
+            logging_string += str(record.process.ident)
+        elif cur_fmt == FormatLiteral.THREAD_NAME.value:
+            logging_string += record.thread.name
+        elif cur_fmt == FormatLiteral.THREAD_ID.value:
+            logging_string += str(record.thread.ident)
+        elif cur_fmt == FormatLiteral.MESSAGE.value:
+            if _from_msg:
+                logging_string += record.message
+            else:
+                logging_string += _format(record.message, record, config, True)
+        else:
+            if not record.extra_info:
+                raise InvalidFormatSpecifierError(
+                    f"Format specifier {cur_fmt!r} does not exist"
+                )
+
+            missing = object()
+            info = record.extra_info.get(cur_fmt, missing)
+            if info is missing:
+                raise InvalidFormatSpecifierError(
+                    f"Format specifier {cur_fmt!r} does not exist"
+                )
+
+            logging_string += str(info)
 
     return logging_string + format_str[last_end:]
 
@@ -135,7 +152,7 @@ def format_record(record: Record, config: Config) -> str:
     """
     logging_string = _format(config.formatter, record, config)  # type: ignore
 
-    if record.exception:
+    if record.exception is not None:
         # make sure the exception is on a newline unless the log is empty
         if logging_string:
             logging_string += "\n"

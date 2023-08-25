@@ -10,11 +10,12 @@ from __future__ import annotations
 
 from atexit import register as atexit_register
 from datetime import datetime
-from functools import partial, wraps
+from functools import partial, update_wrapper
 from inspect import isasyncgenfunction, iscoroutinefunction, isgeneratorfunction
 from multiprocessing import current_process
 from os import PathLike
 from pathlib import Path
+from sys import exc_info
 from threading import current_thread
 from typing import (
     TYPE_CHECKING,
@@ -25,6 +26,7 @@ from typing import (
     Generator,
     Iterable,
     Iterator,
+    Mapping,
     ParamSpec,
     TypeVar,
 )
@@ -34,7 +36,7 @@ from ._config import Config
 from ._levels import Level, LevelDoesNotExistError, get_defaults
 from ._record import Record
 from ._sink import Sink, SinkDoesNotExistError, SyncSink
-from ._traceback import get_frame
+from ._traceback import extract_error_frame, get_frame
 from .colours import Colour, should_colourise, should_wrap, wrap
 
 if TYPE_CHECKING:
@@ -133,6 +135,7 @@ class Logger:
         level: str | Level,
         message: object,
         exception: BaseException | None = None,
+        extra_info: Mapping[str, object] | None = None,
         stack_level: int = 2,
     ) -> None:
         """
@@ -143,6 +146,9 @@ class Logger:
             - `message: object` - Message or additional information.
             - `exception: BaseException | None = None` - Optional exception to print with the log.
             - `stack_level: int = 2` - Int which stores how many calls back the logger called from.
+
+        Raises:
+            - `LevelDoesNotExistError` - Raised if a string level does not exist.
         """
         if not self._sinks.values():
             return
@@ -168,6 +174,7 @@ class Logger:
             str(message),
             current_process(),
             current_thread(),
+            extra_info,
             exception,
         )
 
@@ -253,23 +260,23 @@ class Logger:
         """
         self._log("CRITICAL", message)
 
-    def log_exception(
+    def exception(
         self,
         exception: BaseException,
-        message: object = (
-            "Received error in process %{pname} (%{pid}%), "
-            "on thread %{tname}% (%{tid}%)"
-        ),
         level: str | Level = "ERROR",
+        message: object = (
+            "Received error in process '%{pname}%' (%{pid}%), "
+            "on thread '%{tname}%' (%{tid}%)"
+        ),
     ) -> None:
         """
         Log an exception with a given level and additional information.
 
         Parameters:
-            - `exception: BaseException` - Exception to log.
-            - `message: object = ...` - Additional information to add to the log. Default
-                                        information is the process's & thread's name and id.
-            - `level: str | Level = "Error"` - String name of an existing level or a `Level` object.
+            - `exception` - Exception to log.
+            - `level` - String name of an existing level or a `Level` object.
+            - `message` - Additional information to add to the log. Default information is the
+                          process's & thread's name and id.
         """
         self._log(level, message, exception)
 
@@ -278,16 +285,16 @@ class Logger:
     ) -> Callable[[Callable[P, R]], Callable[P, R]]:
         """
         Function decorator which logs the arguments and return value of a function whenever it is
-        called.
+        called. This decorator works for any callable which is a function, async function,
+        generator, or aysnc generator.
 
         Parameters:
-            - `level: str | Level` - String name of an existing level or a `Level` object.
+            - `level` - String name of an existing level or a `Level` object.
         """
 
         def _decorator(func: Callable[P, R]) -> Callable[P, R]:
             if isgeneratorfunction(func):
 
-                @wraps(func)
                 def _log_wrapper(
                     *args: P.args, **kwargs: P.kwargs
                 ) -> Generator[Any, Any, Any]:
@@ -296,37 +303,130 @@ class Logger:
                         f"Generator {func.__name__!r} called with args: "
                         f"{args!r} and kwargs: {kwargs!r}",
                     )
-                    for res in func(*args, **kwargs):
-                        self._log(
-                            level,
-                            f"Generator {func.__name__!r} yielded {res!r}",
-                        )
-                        yield res
-                    self._log(level, f"Generator {func.__name__!r} exhausted")
+
+                    # The following code is semantically equivalent to "yield from".
+                    # More info: https://peps.python.org/pep-0380/#formal-semantics
+                    gen = func(*args, **kwargs)
+                    try:
+                        yielded = next(gen)
+                        received = None
+
+                        while True:
+                            self._log(
+                                level,
+                                f"Generator {func.__name__!r} yielded {yielded!r}"
+                                f" and was sent {received!r}",
+                            )
+
+                            try:
+                                received = yield yielded
+
+                                try:
+                                    if received is None:
+                                        yielded = next(gen)
+                                    else:
+                                        yielded = gen.send(received)
+                                except StopIteration as stop_iter:
+                                    stop_iter_val = stop_iter.value
+                                    break
+                            except GeneratorExit as gen_exit:
+                                if hasattr(gen, "close") and callable(gen.close):
+                                    gen.close()
+                                raise gen_exit
+                            except BaseException as exc:
+                                if not hasattr(gen, "throw") or not callable(gen.throw):
+                                    raise exc
+
+                                try:
+                                    yielded = gen.throw(*exc_info())
+                                except StopIteration as stop_iter:
+                                    stop_iter_val = stop_iter.value
+                                    break
+                    except StopIteration as stop_iter:
+                        stop_iter_val = stop_iter.value
+
+                    # pylint: disable=used-before-assignment
+                    self._log(
+                        level,
+                        f"Generator {func.__name__!r} exhausted with value {stop_iter_val!r}",
+                    )
+                    return stop_iter_val
 
             elif isasyncgenfunction(func):
 
-                @wraps(func)
-                async def _log_wrapper(
+                async def _log_wrapper(  # type: ignore[misc]
                     *args: P.args, **kwargs: P.kwargs
                 ) -> AsyncGenerator[Any, Any]:
                     self._log(
                         level,
-                        f"Async generator {func.__name__!r} called with args: "
+                        f"Async Generator {func.__name__!r} called with args: "
                         f"{args!r} and kwargs: {kwargs!r}",
                     )
-                    async for res in func(*args, **kwargs):
-                        self._log(
-                            level,
-                            f"Async generator {func.__name__!r} yielded {res!r}",
-                        )
-                        yield res
-                    self._log(level, f"Async generator {func.__name__!r} exhausted")
+
+                    # The following code is semantically equivalent to "yield from".
+                    # More info: https://peps.python.org/pep-0380/#formal-semantics
+                    gen = func(*args, **kwargs)
+                    try:
+                        yielded = await anext(gen)
+                        received = None
+
+                        while True:
+                            self._log(
+                                level,
+                                f"Async Generator {func.__name__!r} yielded {yielded!r}"
+                                f" and was sent {received!r}",
+                            )
+
+                            try:
+                                received = yield yielded
+
+                                try:
+                                    if received is None:
+                                        yielded = await anext(gen)
+                                    else:
+                                        yielded = await gen.asend(received)
+                                except StopAsyncIteration:
+                                    break
+                            except GeneratorExit as gen_exit:
+                                if hasattr(gen, "aclose") and callable(gen.aclose):
+                                    await gen.aclose()
+                                raise gen_exit
+                            except BaseException as exc:
+                                # XXX: reimplement if possible
+                                # Check if the exception was raised in the subgenerator, if so
+                                # reraise it instead of sending it back with `athrow`. This is done
+                                # because (as of writing) exceptions raised during the excution of
+                                # the subgenerator will not bubble up to the caller if thrown back
+                                # to the subgenerator as is the case with normal generators.
+                                if (
+                                    extract_error_frame(exc).f_code.co_name
+                                    == func.__name__
+                                ):
+                                    raise exc
+
+                                if not hasattr(gen, "athrow") or not callable(
+                                    gen.athrow
+                                ):
+                                    raise exc
+
+                                try:
+                                    yielded = await gen.athrow(*exc_info())
+                                except StopAsyncIteration:
+                                    break
+                    except StopAsyncIteration:
+                        pass
+
+                    # pylint: disable=used-before-assignment
+                    self._log(
+                        level,
+                        f"Async Generator {func.__name__!r} exhausted",
+                    )
 
             elif iscoroutinefunction(func):
 
-                @wraps(func)
-                async def _log_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                async def _log_wrapper(  # type: ignore[misc]
+                    *args: P.args, **kwargs: P.kwargs
+                ) -> Any:
                     self._log(
                         level,
                         f"Async function {func.__name__!r} called with args: "
@@ -340,8 +440,7 @@ class Logger:
 
             else:
 
-                @wraps(func)
-                def _log_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
+                def _log_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:  # type: ignore[misc]
                     self._log(
                         level,
                         f"Function {func.__name__!r} called with args: "
@@ -351,107 +450,157 @@ class Logger:
                     self._log(level, f"Function: {func.__name__!r} returned {res!r}")
                     return res
 
-            return _log_wrapper  # type: ignore
+            update_wrapper(_log_wrapper, func)
+            return _log_wrapper  # type: ignore[return-value]
 
         return _decorator
 
     def catch_func(
         self,
-        message: object = (
-            "An error has been caught in %{ftype}% '%{fname}%', "
-            "in process %{pname}% (%{pid}%), on thread %{tname}% (%{tid}%)"
-        ),
-        level: str | Level = "ERROR",
+        exception: (type[BaseException] | tuple[type[BaseException], ...]) = Exception,
+        exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
         default: object = None,
         reraise: bool = False,
-        exception_type: type[E] = Exception,  # type: ignore
-        on_error: Callable[[E], None] | None = None,
+        level: str | Level = "ERROR",
+        on_error: Callable[[BaseException], None] | None = None,
+        message: object = (
+            "An error has been caught in %{ftype}% '%{fname}%', "
+            "in process '%{pname}%' (%{pid}%), on thread '%{tname}%' (%{tid}%)"
+        ),
     ) -> Callable[[Callable[P, R]], Callable[P, R]]:
         """
         Function decorator which catches errors that occur during the execution of the decorated
-        function.
+        function. This decorator works for any callable which is a function, async function,
+        generator, or aysnc generator.
 
         Parameters:
-            - `message: object = ...` - Additional information to add to the log. Default
-                                        information is the process's & thread's name and id.
-            - `level: str | Level = "Error"` - String name of an existing level or a `Level` object.
-            - `default: object = None` - Default value to return if an exception is caught.
-            - `reraise: bool = False` - Whether or not to reraise exceptions that have been caught.
-            - `exception_type: type[E] = Exception` - Exception type that will be caught.
-            - `on_error: Callable[[E], None] | None = None` - Optional function that will be called
-                                                              with the exception that was caught.
+            - `exception` - Exception type(s) that will be caught.
+            - `exclude` - Exception type(s) that will be excluded.
+            - `default` - Default value to return if an exception is caught.
+            - `reraise` - Whether or not to reraise exceptions that have been caught.
+            - `level` - String name of an existing level or a `Level` object, default is 'ERROR'.
+            - `on_error` - Optional function that will be called with the exception that was caught.
+            - `message` - Additional information to add to the log. Default information is the
+                          process's & thread's name and id.
         """
 
         def _decorator(func: Callable[P, R]) -> Callable[P, R]:
             catcher = partial(
                 Catcher,
-                from_decorator=True,
-                logger=self,
-                level=level,
-                exception_type=exception_type,
-                reraise=reraise,
-                on_error=on_error,
+                True,
+                self,
+                message,
+                level,
+                exception,
+                exclude,
+                reraise,
+                on_error,
             )
 
-            string_message = str(message).replace("%{fname}%", func.__name__)
+            extra_info = {"%{fname}%": func.__name__}
 
             if isgeneratorfunction(func):
+                extra_info["%{ftype}%"] = "Generator"
 
-                @wraps(func)
                 def _catch_wrapper(
                     *args: P.args, **kwargs: P.kwargs
                 ) -> Generator[Any, Any, Any]:
-                    with catcher(
-                        message=string_message.replace("%{ftype}%", "generator")
-                    ):
+                    with catcher(extra_info):
                         return (yield from func(*args, **kwargs))
+                    return default
 
             elif isasyncgenfunction(func):
+                extra_info["%{ftype}%"] = "Async Generator"
 
-                @wraps(func)
-                async def _catch_wrapper(
+                async def _catch_wrapper(  # type: ignore[misc]
                     *args: P.args, **kwargs: P.kwargs
                 ) -> AsyncGenerator[Any, Any]:
-                    with catcher(
-                        message=string_message.replace("%{ftype}%", "async generator")
-                    ):
-                        async for res in func(*args, **kwargs):
-                            yield res
+                    # pylint: disable=line-too-long
+
+                    with catcher(extra_info):
+                        # Async "yield from" does not exist so the following is the semantic equivalent.
+                        # No async "yield from": https://peps.python.org/pep-0525/#asynchronous-yield-from
+                        # "yield from" semantic equivalent: https://peps.python.org/pep-0380/#formal-semantics
+                        gen = func(*args, **kwargs)
+                        try:
+                            yielded = await anext(gen)
+
+                            while True:
+                                try:
+                                    received = yield yielded
+
+                                    try:
+                                        if received is None:
+                                            yielded = await anext(gen)
+                                        else:
+                                            yielded = await gen.asend(received)
+                                    except StopAsyncIteration:
+                                        break
+                                except GeneratorExit as gen_exit:
+                                    if hasattr(gen, "aclose") and callable(gen.aclose):
+                                        await gen.aclose()
+
+                                    raise gen_exit
+                                except BaseException as exc:
+                                    # XXX: reimplement if possible
+                                    # Check if the exception was raised in the subgenerator,
+                                    # if so reraise it instead of sending it back with `athrow`.
+                                    # This is done because (as of writing) exceptions raised during
+                                    # the excution of the subgenerator will not bubble up to the caller if
+                                    # thrown back to the subgenerator as is the case with normal
+                                    # generators.
+                                    if (
+                                        extract_error_frame(exc).f_code.co_name
+                                        == func.__name__
+                                    ):
+                                        raise exc
+
+                                    if not hasattr(gen, "athrow") or not callable(
+                                        gen.athrow
+                                    ):
+                                        raise exc
+
+                                    try:
+                                        yielded = await gen.athrow(*exc_info())
+                                    except StopAsyncIteration:
+                                        break
+                        except StopAsyncIteration:
+                            pass
 
             elif iscoroutinefunction(func):
+                extra_info["%{ftype}%"] = "Async Function"
 
-                @wraps(func)
-                async def _catch_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
-                    with catcher(
-                        message=string_message.replace("%{ftype}%", "async function")
-                    ):
+                async def _catch_wrapper(  # type: ignore[misc]
+                    *args: P.args, **kwargs: P.kwargs
+                ) -> Any:
+                    with catcher(extra_info):
                         return await func(*args, **kwargs)
                     return default
 
             else:
+                extra_info["%{ftype}%"] = "Function"
 
-                @wraps(func)
-                def _catch_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:
-                    with catcher(
-                        message=string_message.replace("%{ftype}%", "function")
-                    ):
+                def _catch_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:  # type: ignore[misc]
+                    with catcher(extra_info):
                         return func(*args, **kwargs)
                     return default
 
-            return _catch_wrapper  # type: ignore
+            update_wrapper(_catch_wrapper, func)
+            return _catch_wrapper  # type: ignore[return-value]
 
         return _decorator
 
     def catch_context(
         self,
-        message: object = (
-            "An error has been caught in a context manager, "
-            "in process %{pname}% (%{pid}%), on thread %{tname}% (%{tid}%)"
-        ),
-        level: str | Level = "ERROR",
+        exception: type[BaseException] | tuple[type[BaseException], ...] = Exception,
+        exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
         reraise: bool = False,
-        exception_type: type[E] = Exception,  # type: ignore
-        on_error: Callable[[E], None] | None = None,
+        level: str | Level = "ERROR",
+        on_error: Callable[[BaseException], None] | None = None,
+        message: object = (
+            "An error has been caught in a ContextManager, "
+            "in process '%{pname}%' (%{pid}%), on thread '%{tname}%' (%{tid}%)"
+        ),
     ) -> ContextManager[None]:
         """
         Context manager which catches errors that occur during the execution of the body.
@@ -465,7 +614,9 @@ class Logger:
             - `on_error: Callable[[E], None] | None = None` - Optional function that will be called
                                                               with the exception that was caught.
         """
-        return Catcher(False, self, message, level, exception_type, reraise, on_error)
+        return Catcher(
+            False, self, message, level, exception, exclude, reraise, on_error, None
+        )
 
     def add(
         self,

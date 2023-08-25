@@ -12,6 +12,7 @@ from datetime import datetime
 from multiprocessing.process import BaseProcess
 from threading import Thread
 from types import FrameType
+from typing import Mapping
 
 from ._levels import Level
 
@@ -41,4 +42,5 @@ class Record:
     message: str
     process: BaseProcess
     thread: Thread
+    extra_info: Mapping[str, object] | None
     exception: BaseException | None

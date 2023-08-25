@@ -38,10 +38,32 @@ def _get_frame_fallback(depth: int = 0) -> FrameType:
     try:
         raise Exception
     except Exception:
-        frame = sys.exc_info()[2].tb_frame  # type: ignore
-        for _ in range(depth + 1):
-            frame = frame.f_back
+        frame: FrameType = sys.exc_info()[2].tb_frame  # type: ignore
+        for _ in range(depth + 1):  # offset current frame
+            frame: FrameType = frame.f_back  # type: ignore
         return frame
 
 
 get_frame = _get_frame if hasattr(sys, "_getframe") else _get_frame_fallback
+
+
+def extract_error_frame(exc: BaseException) -> FrameType:
+    """
+    Return the frame where where the exception `exc` was raised.
+
+    Parameters:
+        - `exc: BaseException` - Exception to retrieve the frame from.
+
+    Returns: `FrameType` - Frame where the exception was raised.
+
+    Raises:
+        - `ValueError` - Raised if `exc.__traceback__` is None as frame cannot be extract.
+    """
+    if exc.__traceback__ is None:
+        raise ValueError(f"cannot extract frame from {exc!r}, '__traceback__' is None")
+
+    tb = exc.__traceback__
+    while tb.tb_next is not None:
+        tb = tb.tb_next
+
+    return tb.tb_frame
