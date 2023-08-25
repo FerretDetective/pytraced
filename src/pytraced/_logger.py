@@ -11,7 +11,12 @@ from __future__ import annotations
 from atexit import register as atexit_register
 from datetime import datetime
 from functools import partial, update_wrapper
-from inspect import isasyncgenfunction, iscoroutinefunction, isgeneratorfunction
+from inspect import (
+    isasyncgenfunction,
+    isclass,
+    iscoroutinefunction,
+    isgeneratorfunction,
+)
 from multiprocessing import current_process
 from os import PathLike
 from pathlib import Path
@@ -29,6 +34,7 @@ from typing import (
     Mapping,
     ParamSpec,
     TypeVar,
+    overload,
 )
 
 from ._catcher import Catcher
@@ -455,7 +461,8 @@ class Logger:
 
         return _decorator
 
-    def catch_func(
+    @overload
+    def catch_func(  # type: ignore[misc]
         self,
         exception: (type[BaseException] | tuple[type[BaseException], ...]) = Exception,
         exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
@@ -468,6 +475,26 @@ class Logger:
             "in process '%{pname}%' (%{pid}%), on thread '%{tname}%' (%{tid}%)"
         ),
     ) -> Callable[[Callable[P, R]], Callable[P, R]]:
+        ...
+
+    @overload
+    def catch_func(self, exception: Callable[P, R]) -> Callable[P, R]:
+        ...
+
+    def catch_func(
+        self,
+        exception: (type[BaseException] | tuple[type[BaseException], ...])
+        | Callable[P, R] = Exception,
+        exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
+        default: object = None,
+        reraise: bool = False,
+        level: str | Level = "ERROR",
+        on_error: Callable[[BaseException], None] | None = None,
+        message: object = (
+            "An error has been caught in %{ftype}% '%{fname}%', "
+            "in process '%{pname}%' (%{pid}%), on thread '%{tname}%' (%{tid}%)"
+        ),
+    ) -> Callable[[Callable[P, R]], Callable[P, R]] | Callable[P, R]:
         """
         Function decorator which catches errors that occur during the execution of the decorated
         function. This decorator works for any callable which is a function, async function,
@@ -483,6 +510,10 @@ class Logger:
             - `message` - Additional information to add to the log. Default information is the
                           process's & thread's name and id.
         """
+        if (
+            not isclass(exception) or not issubclass(exception, BaseException)
+        ) and callable(exception):
+            return self.catch_func()(exception)  # type: ignore
 
         def _decorator(func: Callable[P, R]) -> Callable[P, R]:
             catcher = partial(
