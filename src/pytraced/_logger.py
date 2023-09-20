@@ -200,6 +200,9 @@ class Logger:
         Parameters:
             - `level: str | Level` - String name of an existing level or a `Level` object.
             - `message: object` - Additional information to add to the log.
+
+        Raises:
+            - `LevelDoesNotExistError` - Raised if a given string level name does not exist.
         """
         self._log(level, message)
 
@@ -279,10 +282,13 @@ class Logger:
         Log an exception with a given level and additional information.
 
         Parameters:
-            - `exception` - Exception to log.
-            - `level` - String name of an existing level or a `Level` object.
-            - `message` - Additional information to add to the log. Default information is the
-                          process's & thread's name and id.
+            - `exception: BaseException` - Exception to log.
+            - `level: str | Level` - String name of an existing level or a `Level` object.
+            - `message: object` - Additional information to add to the log. Default information is
+                                  the process's & thread's name and id.
+
+        Raises:
+            - `LevelDoesNotExistError` - Raised if a given string level name does not exist.
         """
         self._log(level, message, exception)
 
@@ -295,7 +301,10 @@ class Logger:
         generator, or aysnc generator.
 
         Parameters:
-            - `level` - String name of an existing level or a `Level` object.
+            - `level: str | Level` - String name of an existing level or a `Level` object.
+
+        Raises:
+            - `LevelDoesNotExistError` - Raised if a given string level name does not exist.
         """
 
         def _decorator(func: Callable[P, R]) -> Callable[P, R]:
@@ -464,8 +473,8 @@ class Logger:
     @overload
     def catch_func(  # type: ignore[misc]
         self,
-        exception: (type[BaseException] | tuple[type[BaseException], ...]) = Exception,
-        exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
+        exception: (type[BaseException] | Iterable[type[BaseException]]) = Exception,
+        exclude: type[BaseException] | Iterable[type[BaseException]] | None = None,
         default: object = None,
         reraise: bool = False,
         level: str | Level = "ERROR",
@@ -483,9 +492,9 @@ class Logger:
 
     def catch_func(
         self,
-        exception: (type[BaseException] | tuple[type[BaseException], ...])
+        exception: (type[BaseException] | Iterable[type[BaseException]])
         | Callable[P, R] = Exception,
-        exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
+        exclude: type[BaseException] | Iterable[type[BaseException]] | None = None,
         default: object = None,
         reraise: bool = False,
         level: str | Level = "ERROR",
@@ -509,6 +518,9 @@ class Logger:
             - `on_error` - Optional function that will be called with the exception that was caught.
             - `message` - Additional information to add to the log. Default information is the
                           process's & thread's name and id.
+
+        Raises:
+            - `LevelDoesNotExistError` - Raised if a given string level name does not exist.
         """
         if (
             not isclass(exception) or not issubclass(exception, BaseException)
@@ -623,8 +635,8 @@ class Logger:
 
     def catch_context(
         self,
-        exception: type[BaseException] | tuple[type[BaseException], ...] = Exception,
-        exclude: type[BaseException] | tuple[type[BaseException], ...] | None = None,
+        exception: type[BaseException] | Iterable[type[BaseException]] = Exception,
+        exclude: type[BaseException] | Iterable[type[BaseException]] | None = None,
         reraise: bool = False,
         level: str | Level = "ERROR",
         on_error: Callable[[BaseException], None] | None = None,
@@ -644,6 +656,9 @@ class Logger:
             - `exception_type: type[E] = Exception` - Exception type that will be caught.
             - `on_error: Callable[[E], None] | None = None` - Optional function that will be called
                                                               with the exception that was caught.
+
+        Raises:
+            - `LevelDoesNotExistError` - Raised if a given string level name does not exist.
         """
         return Catcher(
             False, self, message, level, exception, exclude, reraise, on_error, None
@@ -714,6 +729,9 @@ class Logger:
             - `encoding: str = "utf-8"` - File encoding used (if applicable).
 
         Returns: `int` - Id of the `Sink` object.
+
+        Raises:
+            - `LevelDoesNotExistError` - Raised if a given string level name does not exist.
         """
         sink_id = next(self._sink_id_getter)
 
