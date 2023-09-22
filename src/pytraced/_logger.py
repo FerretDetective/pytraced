@@ -175,7 +175,7 @@ class Logger:
             self.name,
             global_name,
             level,
-            datetime.now().astimezone(),
+            datetime.now(),
             frame,
             str(message),
             current_process(),
@@ -680,55 +680,78 @@ class Logger:
         Add a new `Sink` to the logger with a custom configuration. If given a subclass of `Sink`
         skip all configuration and add the existing sink.
 
-        Format specifiers for format strings:
-            All format specifiers are wrapped in percent sign followed by braces; Exg: `%{lvl}%`.
+        Format specifiers for log format strings:
+            All format specifiers are wrapped in percent sign followed by braces, exg: `%{lvl}%`.
 
-            - `%{name}%` - Name of the logger from which the log was produced.
-            - `%{lvl}%` or `%{level}%` - Level/severity of the log.
-            - `%{time}%` - Datetime the log was produced at. To specify a specific datetime format
-                           you can either use normal `strftime` formats or use to more user friendly
-                           ones provided. `yyyy`: full year, `yy`: last digits of the year, `mm`:
-                           zero-padded month, `dd`: zero-padded day, `HH`: zero-padded hour, `MM`:
-                           zero-padded minute, `SS`: zero-padded seconds, `FS`: zero-padded
-                           fractional seconds to three digits, `tzo`: timezone offset`, `tzn`:
-                           timezone name. The format specifiers should be placed as follows:
-                           `%{time:<...formats>}%`; Exg: `%{time:yy-mm-dd, %X}%`.
-            - `%{trace}%` - Traceback from where the logger was called. To specify a specific trace
-                            style you can use one of the defaults provided. `bare`: bare-bones
-                            stack trace including only the filename and lineno (main.py:5),
-                            `simple`: simple trace including the global `__name__`, the enclosing
-                            function, & the lineno (__main__@main:5), `clean`: simple yet
-                            informative trace including relative path to the file, the enclosing
-                            function, & the lineno (src/main.py@main:5), `detailed`: detailed stack
-                            trace including the info provided by the `clean` info for entire
-                            traceback (src/main.py@<module>:9 -> src/main.py@main:5), `full`: the
-                            full unprocessed python traceback. Must follow the format
-                            '%{trace:<format>}%'; Exg: '%{trace:clean}%'.
-            - `%{gname}%` or `%{global-name}%` - Global `__name__` from where the log was produced.
-            - `%{pname}%` or `%{process-name}%` - Name of the process where the log originated.
-            - `%{pid}%` or `%{process-id}%` - Id of the process where the log originated.
-            - `%{tname}%` or `%{thread-name}%` - Name of the thread where the log originated.
-            - `%{tid}%` or `%{thread-id}%` - Id of the thread where the log originated.
+            - `name` - Name of the logger from which the log was produced.
+            - `lvl` or `level` - Level/severity of the log.
+            - `time` - Datetime the log was produced at. Datetime format specifiers listed below.
+                       Must adhere to the following format: `time:<datetime-fmt>`,
+                       exg: `time:YYYY/MM/DD`. Default format is ISO time.
+            - `trace` - Traceback from where the logger was called. Trace styles are listed below.
+                        Must adhere to the following format: `trace:<trace-style>`,
+                        exg: `trace:clean`. Default format is `clean`.
+            - `gname` or `global-name` - Global `__name__` from where the log was produced.
+            - `pname` or `process-name` - Name of the process where the log originated.
+            - `pid` or `process-identifier` - Id of the process where the log originated.
+            - `tname` or `thread-name` - Name of the thread where the log originated.
+            - `tid` or `thread-id` - Id of the thread where the log originated.
+
+        Datetime format specifiers:
+            - `YYYY` - Full year [1-9999]. Exg: '1234'.
+            - `YY` - Last two digits of the year [0, 99]. Exg: '34'.
+            - `Q` - Quarter [1, 4]. Exg: '1'.
+            - `MMMM` - Month name [January, December]. Exg: 'February'.
+            - `MMM` - Month name abbreviation [Jan, Dec]. Exg: 'Feb'.
+            - `MM` - Zero-padded month number [01, 12]. Exg: '02'.
+            - `M` - Month number [1, 12]. Exg: '2'.
+            - `DDDD` - Zero-padded day of the year [001, 366]. Exg: '032'.
+            - `DDD` - Day of the year [1, 366]. Exg: '32'.
+            - `DD` - Zero-padded day of the month [01, 31]: Exg: '01'.
+            - `D` - Day of the month [1, 31]. Exg: '1'.
+            - `ddd` - Day name [Monday, Sunday]. Exg: 'Monday'.
+            - `dd` - Day name abbreviation [Mon, Sun]. Exg: 'Mon'.
+            - `d` - Day of the week [0, 6]. Exg: '0'.
+            - `A` - AM or PM [AM, PM]. Exg: 'AM'.
+            - `HH` - Zero-padded 12 hour [01, 12]. Exg: '01'.
+            - `H` - 12 hour [1, 12]. Exg: '1'.
+            - `hh` - Zero-padded 24 hour [01, 24]. Exg: '01'.
+            - `h` - 24 hour [1, 24]. Exg: '1'.
+            - `mm` - Zero-padded minute [00, 59]. Exg: '01'.
+            - `m` - Minute [0, 59]. Exg: '1'.
+            - `ss` - Zero-padded second [00, 59]. Exg: '01'.
+            - `s` - Second [0, 59]. Exg: '1'.
+            - `[S, SSSSSS]` - Zero-padded n-digits of fraction second time, one 'S' represents one
+                              digit [000000, 999999]. Exg: '012085'.
+            - `Z` - Local timezone name. Exg: 'Mountain Standard Time'.
+            - `z` - Local to UTC timezone offset. Exg: '-0600'.
+            - `X` - Seconds or POSIX timestamp. Exg: '1695359774.25476'.
+            - `x` - Microseconds timestamp. Exg: '1695359857663486'.
+
+        Traceback styles:
+            - `bare` - Includes only the filename and line number. Exg: 'main.py:5'.
+            - `simple` - Includes the global `__name__`, the enclosing function, & the line number.
+                         Exg: '__main__@main:5'.
+            - `clean` - Includes relative path to the file, the enclosing function, & the line
+                        number. Exg: 'src/main.py@main:5'
+            - `detailed` - Includes the information from `clean` for the entire stack trace.
+                           Exg: 'src/main.py@<module>:9 -> src/main.py@main:5'.
+            - `full` - Full, unchanged python traceback.
 
         Parameters:
-            - `out: SupportsWrite[str] | Callable[[str], None] | StrPath` - Output source for logs.
-            - `min_level: str | int | Level = 0` - Minimum severity log that will be written.
-            - `log_format: Callable[[Record], str]
-                           | str | Config = Config.DEFAULT` - Should either be a parsable format
-                                                              string or a function which returns a
-                                                              formatted `Record`.
-            - `log_filter: Callable[[Record], bool]
-                           | None = None` - Function used to determine whether or not a log should
-                                            be written to the stream. Returning false indicates that
-                                            a log shouldn't be written.
-            - `colourise: bool = True` - Whether or not to colourise logs (if possible).
-            - `on_remove: Callable[[], None]
-                          | None = None` - Callback which will be called either when the sink is
-                                           removed or when python interpreter exits.
-            - `open_mode: OpenTextMode = "a"` - Mode used to open a file (if applicable).
-            - `encoding: str = "utf-8"` - File encoding used (if applicable).
+            - `out` - Output source for logs.
+            - `min_level` - Minimum severity log that will be written.
+            - `log_format` - Should either be a parsable format string or a function which returns
+                             a formatted `Record`.
+            - `log_filter` - Function used to determine whether or not a log should be written to
+                             the stream. Returning false indicates that a log shouldn't be written.
+            - `colourise` - Whether or not to colourise logs (if possible).
+            - `on_remove` - Callback which will be called either when the sink is removed or when
+                            python interpreter exits.
+            - `open_mode` - Mode used to open a file (if applicable).
+            - `encoding` - File encoding used (if applicable).
 
-        Returns: `int` - Id of the `Sink` object.
+        Returns: Id of the `Sink` object.
 
         Raises:
             - `LevelDoesNotExistError` - Raised if a given string level name does not exist.
@@ -752,16 +775,13 @@ class Logger:
             level = self._levels.get(min_level)
             if level is None:
                 raise LevelDoesNotExistError(
-                    f"logging level of {min_level!r} does not exist"
+                    f"Logging level {min_level!r} does not exist"
                 )
             min_level = level.severity
 
         if not isinstance(log_format, Config):
             log_format = Config(
-                log_format=log_format,
-                filter_func=log_filter,
-                colourise=should_colourise(out) and colourise,
-                min_level=min_level,
+                log_format, log_filter, should_colourise(out) and colourise, min_level
             )
 
         self._sinks[sink_id] = SyncSink(
