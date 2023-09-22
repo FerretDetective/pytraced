@@ -118,14 +118,14 @@ def _format(format_str: str, record: Record, *, _from_msg: bool = False) -> str:
         else:
             if not record.extra_info:
                 raise InvalidFormatSpecifierError(
-                    f"Format specifier {format_str!r} does not exist"
+                    f"Format specifier {cur_fmt!r} does not exist"
                 )
 
             missing = object()
-            info = record.extra_info.get(format_str, missing)
+            info = record.extra_info.get(cur_fmt, missing)
             if info is missing:
                 raise InvalidFormatSpecifierError(
-                    f"Format specifier {format_str!r} does not exist"
+                    f"Format specifier {cur_fmt!r} does not exist"
                 )
 
             logging_string += str(info)
