@@ -683,7 +683,7 @@ class Logger:
         Format specifiers for log format strings:
             All format specifiers are wrapped in percent sign followed by braces, exg: `%{lvl}%`.
 
-            - `name` - Name of the logger from which the log was produced.
+            - `name` or `logger-name` - Name of the logger from which the log was produced.
             - `lvl` or `level` - Level/severity of the log.
             - `time` - Datetime the log was produced at. Datetime format specifiers listed below.
                        Must adhere to the following format: `time:<datetime-fmt>`,

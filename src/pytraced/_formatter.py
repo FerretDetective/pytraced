@@ -74,7 +74,7 @@ def _format(format_str: str, record: Record, *, _from_msg: bool = False) -> str:
         last_end = match.end()
         cur_fmt = match.group()
 
-        if cur_fmt == "%{name}%":
+        if cur_fmt in ("%{name}%", "%{logger-name}%"):
             logging_string += record.logger_name
         elif cur_fmt in ("%{lvl}%", "%{level}%"):
             logging_string += record.level.name
