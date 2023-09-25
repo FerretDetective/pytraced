@@ -12,6 +12,8 @@ from functools import lru_cache
 from re import compile as compile_re
 from typing import Callable, Mapping
 
+from ._config import Config
+
 
 def _add_timezone(date_time: datetime) -> datetime:
     """
@@ -110,7 +112,6 @@ _DATE_TOKEN_MAP: Mapping[str, Callable[[datetime], str]] = {
 _DATE_TOKEN_REGEXP = compile_re(f"({'|'.join(_DATE_TOKEN_MAP.keys())})+?")
 
 
-@lru_cache(maxsize=12)
 def format_datetime(date_time: datetime, fmt: str) -> str:
     """
     Format a given `datetime` object using the custom token mapping.
@@ -122,3 +123,7 @@ def format_datetime(date_time: datetime, fmt: str) -> str:
     Returns: Formatted datetime.
     """
     return _DATE_TOKEN_REGEXP.sub(lambda m: _DATE_TOKEN_MAP[m.group()](date_time), fmt)
+
+
+if Config.CACHE_FORMATTED_DATETIMES:
+    format_datetime = lru_cache(maxsize=6)(format_datetime)

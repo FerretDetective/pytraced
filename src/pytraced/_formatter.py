@@ -6,6 +6,7 @@ This file contains all of the functions required to format `Record`s according t
 Functions:
     - `format_record` - Get a string with the info from a record according to the config.
 """
+from enum import Enum, auto
 from functools import lru_cache
 from os.path import basename
 from pathlib import Path
@@ -24,7 +25,18 @@ class InvalidFormatSpecifierError(Exception):
     """
 
 
-@lru_cache(maxsize=None)  # unbounded cache for the lifetime of the program
+class _TracebackStyles(Enum):
+    """
+    Enum containing all available traceback styles. This class is used clarity when formatting.
+    """
+
+    bare = auto()
+    simple = auto()
+    clean = auto()
+    detailed = auto()
+    full = auto()
+
+
 def _format_path(str_path: str) -> str:
     """
     If possible return the path formatted to be relative to the cwd.
@@ -35,6 +47,7 @@ def _format_path(str_path: str) -> str:
     Returns: `str` - Formatted path.
     """
 
+    # `Path.is_relative_to` is determined by a conditional error, so the below is a simplification
     try:
         return str(Path(str_path).relative_to(Path.cwd()))
     except ValueError:
@@ -68,32 +81,35 @@ def _format(format_str: str, record: Record, *, _from_msg: bool = False) -> str:
         elif cur_fmt.startswith("%{time"):
             logging_string += format_datetime(
                 record.date_time,
-                "YYYY-MM-DD hh:mm:ss.SSS z" if cur_fmt == "%{time}%" else cur_fmt[7:-2],
+                Config.DEFAULT_TIME if cur_fmt == "%{time}%" else cur_fmt[7:-2],
+                # the slice [7:-2] isolates the datetime format. Exg: "%{time:YYYY}%" -> "YYYY"
             )
         elif cur_fmt.startswith("%{trace"):
-            style = "clean" if cur_fmt == "%{trace}%" else cur_fmt[8:-2]
+            style = Config.DEFAULT_TRACE if cur_fmt == "%{trace}%" else cur_fmt[8:-2]
+            # the slice [8:-2] isolates the trace style. Exg: "%{trace:bare}%" -> "bare"
 
-            if style == "bare":
+            if style == _TracebackStyles.bare.name:
+                # `basename` is used to avoid memory allocation of creating a `Path`
                 logging_string += (
                     f"{basename(record.frame.f_code.co_filename)}:"
                     f"{record.frame.f_lineno}"
                 )
-            elif style == "simple":
+            elif style == _TracebackStyles.simple.name:
                 logging_string += (
                     f"{record.global_name}@{record.frame.f_code.co_name}:"
                     f"{record.frame.f_lineno}"
                 )
-            elif style == "clean":
+            elif style == _TracebackStyles.clean.name:
                 logging_string += (
                     f"{_format_path(record.frame.f_code.co_filename)}@"
                     f"{record.frame.f_code.co_name}:{record.frame.f_lineno}"
                 )
-            elif style == "detailed":
+            elif style == _TracebackStyles.detailed.name:
                 logging_string += " -> ".join(
                     f"{_format_path(trace.filename)}@{trace.name}:{trace.lineno}"
                     for trace in extract_stack(record.frame)
                 )
-            elif style == "full":
+            elif style == _TracebackStyles.full.name:
                 logging_string += "\n{}\n".format("\n".join(format_stack(record.frame)))
             else:
                 raise InvalidFormatSpecifierError(
@@ -110,10 +126,11 @@ def _format(format_str: str, record: Record, *, _from_msg: bool = False) -> str:
         elif cur_fmt in ("%{tid}%", "%{thread-identifier}%"):
             logging_string += str(record.thread.ident)
         elif cur_fmt in ("%{msg}%", "%{message}%"):
-            # stops infinite recursion when a message references itself
+            # stops infinite recursion when a message contains "%{msg}%" or "%{message}%"
             if _from_msg:
                 logging_string += record.message
             else:
+                # recurse to expand message contents. Exg "%{msg}%" -> "%{time:YYYY}%"
                 logging_string += _format(record.message, record, _from_msg=True)
         else:
             if not record.extra_info:
@@ -161,3 +178,7 @@ def format_record(record: Record, config: Config) -> str:
         return add_colours(logging_string, *record.level.colours)
 
     return logging_string
+
+
+if Config.CACHE_FORMATTED_PATHS:
+    _format_path = lru_cache(maxsize=None)(_format_path)

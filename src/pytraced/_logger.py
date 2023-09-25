@@ -669,7 +669,7 @@ class Logger:
         out: SupportsWrite[str] | Callable[[str], None] | StrPath,
         *,
         min_level: str | int | Level = 0,
-        log_format: str | Callable[[Record], str] | Config = Config.DEFAULT,
+        log_format: str | Callable[[Record], str] | Config = Config.DEFAULT_FORMAT,
         log_filter: Callable[[Record], bool] | None = None,
         colourise: bool = True,
         on_remove: Callable[[], None] | None = None,
