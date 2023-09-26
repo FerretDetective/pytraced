@@ -26,7 +26,7 @@ def _get_utc_offset(date_time: datetime) -> str | None:
 
     offset = date_time.utcoffset()
 
-    if not offset:
+    if offset is None:
         return None
 
     sign = "+"
