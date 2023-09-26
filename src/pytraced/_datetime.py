@@ -15,18 +15,6 @@ from typing import Callable, Mapping
 from ._config import Config
 
 
-def _add_timezone(date_time: datetime) -> datetime:
-    """
-    Add the current timezone to the `datetime` object.
-
-    Parameters:
-        - `date_time` - `datetime` object to add the local timezone to.
-
-    Returns: `datetime` object with the local timezone.
-    """
-    return date_time.astimezone()
-
-
 def _get_utc_offset(date_time: datetime) -> str | None:
     """Return the formatted UTC timezone offset if the `datetime` object has a timezone.
 
@@ -71,40 +59,40 @@ _DATE_TOKEN_MAP: Mapping[str, Callable[[datetime], str]] = {
 
     "MMMM": lambda d: month_name[d.month],                         # month name
     "MMM": lambda d: month_abbr[d.month],                          # month abbreviation
-    "MM": lambda d: f"{d.month:0>2}",                              # zero-padded month number
+    "MM": lambda d: f"{d.month:02}",                               # zero-padded month number
     "M": lambda d: str(d.month),                                   # month number
 
     "DDDD": lambda d: f"{d.timetuple().tm_yday:03}",               # zero-padded day of the year
     "DDD": lambda d: str(d.timetuple().tm_yday),                   # day of the year
-    "DD": lambda d: f"{d.day:0>2}",                                # zero-padded day of the month
+    "DD": lambda d: f"{d.day:02}",                                 # zero-padded day of the month
     "D": lambda d: str(d.day),                                     # day of the month
 
-    "ddd": lambda d: day_name[d.day],                              # day name
-    "dd": lambda d: day_abbr[d.day],                               # day abbreviation
+    "ddd": lambda d: day_name[d.timetuple().tm_wday],              # day name
+    "dd": lambda d: day_abbr[d.timetuple().tm_wday],               # day abbreviation
     "d": lambda d: str(d.timetuple().tm_wday),                     # day of the week
 
     "A": lambda d: "AM" if d.hour < 12 else "PM",                  # am or pm
 
     "HH": lambda d: f"{((d.hour - 1) % 12) + 1:02}",               # zero-padded 12 hour
     "H": lambda d: str(((d.hour - 1) % 12) + 1),                   # 12 hour
-    "hh": lambda d: f"{d.hour:0>2}",                               # zero-padded 24 hour
+    "hh": lambda d: f"{d.hour:02}",                                # zero-padded 24 hour
     "h": lambda d: str(d.hour),                                    # 24 hour
 
-    "mm": lambda d: f"{d.minute:0>2}",                             # zero-padded minute
+    "mm": lambda d: f"{d.minute:02}",                              # zero-padded minute
     "m": lambda d: str(d.minute),                                  # minute
 
-    "ss": lambda d: f"{d.second:0>2}",                             # zero-padded second
+    "ss": lambda d: f"{d.second:02}",                              # zero-padded second
     "s": lambda d: str(d.second),                                  # second
 
-    "SSSSSS": lambda d: f"{d.microsecond:0>6}",                    # 6 digit zero-padded microsecond
-    "SSSSS": lambda d: f"{d.microsecond // 10:0>5}",               # 5 digit zero-padded microsecond
-    "SSSS": lambda d: f"{d.microsecond // 100:0>4}",               # 4 digit zero-padded microsecond
-    "SSS": lambda d: f"{d.microsecond // 1_000:0>3}",              # 3 digit zero-padded microsecond
-    "SS": lambda d: f"{d.microsecond // 10_000:0>2}",              # 2 digit zero-padded microsecond
+    "SSSSSS": lambda d: f"{d.microsecond:06}",                     # 6 digit zero-padded microsecond
+    "SSSSS": lambda d: f"{d.microsecond // 10:05}",                # 5 digit zero-padded microsecond
+    "SSSS": lambda d: f"{d.microsecond // 100:04}",                # 4 digit zero-padded microsecond
+    "SSS": lambda d: f"{d.microsecond // 1_000:03}",               # 3 digit zero-padded microsecond
+    "SS": lambda d: f"{d.microsecond // 10_000:02}",               # 2 digit zero-padded microsecond
     "S": lambda d: str(d.microsecond // 100_000),                  # 1 digit microsecond
 
-    "Z": lambda d: _add_timezone(d).tzname() or "N/A",             # timezone name
-    "z": lambda d: _get_utc_offset(_add_timezone(d)) or "N/A",     # utc offset
+    "Z": lambda d: d.astimezone().tzname() or "N/A",               # timezone name
+    "z": lambda d: _get_utc_offset(d.astimezone()) or "N/A",       # utc offset
 
     "X": lambda d: str(d.timestamp()),                             # seconds timestamp
     "x": lambda d: str(int(d.timestamp() * 1e6) + d.microsecond),  # microseconds timestamp
