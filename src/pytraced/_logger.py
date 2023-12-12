@@ -604,7 +604,7 @@ class Logger:
                                         raise exc
 
                                     try:
-                                        yielded = await gen.athrow(*exc_info())
+                                        yielded = await gen.athrow(exc)
                                     except StopAsyncIteration:
                                         break
                         except StopAsyncIteration:
