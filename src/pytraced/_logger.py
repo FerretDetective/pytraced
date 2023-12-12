@@ -20,6 +20,7 @@ from inspect import (
 from multiprocessing import current_process
 from os import PathLike
 from pathlib import Path
+from sys import exc_info
 from threading import current_thread
 from typing import (
     TYPE_CHECKING,
@@ -270,7 +271,7 @@ class Logger:
 
     def exception(
         self,
-        exception: BaseException,
+        exc: BaseException | None = None,
         level: str | Level = "ERROR",
         message: object = (
             "Received error in process '%{pname}%' (%{pid}%), "
@@ -281,7 +282,7 @@ class Logger:
         Log an exception with a given level and additional information.
 
         Parameters:
-            - `exception: BaseException` - Exception to log.
+            - `exc: BaseException | None` - Exception to log. If None, uses sys.exc_info.
             - `level: str | Level` - String name of an existing level or a `Level` object.
             - `message: object` - Additional information to add to the log. Default information is
                                   the process's & thread's name and id.
@@ -289,7 +290,7 @@ class Logger:
         Raises:
             - `LevelDoesNotExistError` - Raised if a given string level name does not exist.
         """
-        self._log(level, message, exception)
+        self._log(level, message, exc or exc_info()[1])
 
     def log_func(
         self, level: str | Level
