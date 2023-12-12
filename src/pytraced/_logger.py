@@ -20,7 +20,6 @@ from inspect import (
 from multiprocessing import current_process
 from os import PathLike
 from pathlib import Path
-from sys import exc_info
 from threading import current_thread
 from typing import (
     TYPE_CHECKING,
@@ -353,7 +352,7 @@ class Logger:
                                     raise exc
 
                                 try:
-                                    yielded = gen.throw(*exc_info())
+                                    yielded = gen.throw(exc)
                                 except StopIteration as stop_iter:
                                     stop_iter_val = stop_iter.value
                                     break
@@ -425,7 +424,7 @@ class Logger:
                                     raise exc
 
                                 try:
-                                    yielded = await gen.athrow(*exc_info())
+                                    yielded = await gen.athrow(exc)
                                 except StopAsyncIteration:
                                     break
                     except StopAsyncIteration:
