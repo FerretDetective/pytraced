@@ -462,7 +462,7 @@ class Logger:
                         f"{args!r} and kwargs: {kwargs!r}",
                     )
                     res = func(*args, **kwargs)
-                    self._log(level, f"Function: {func.__name__!r} returned {res!r}")
+                    self._log(level, f"Function {func.__name__!r} returned {res!r}")
                     return res
 
             update_wrapper(_log_wrapper, func)
@@ -471,7 +471,7 @@ class Logger:
         return _decorator
 
     @overload
-    def catch_func(  # type: ignore[misc]
+    def catch_func(  # type: ignore[overload-overlap]
         self,
         exception: (type[BaseException] | Iterable[type[BaseException]]) = Exception,
         exclude: type[BaseException] | Iterable[type[BaseException]] | None = None,
